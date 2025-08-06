@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.shape.Rectangle?>
+
+<HBox xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" spacing="5" prefHeight="20.0" prefWidth="60.0">
+    <children>
+        <Rectangle fx:id="health1" width="15" height="15" visible="true" />
+        <Rectangle fx:id="health2" width="15" height="15" visible="true" />
+        <Rectangle fx:id="health3" width="15" height="15" visible="true" />
+    </children>
+</HBox>

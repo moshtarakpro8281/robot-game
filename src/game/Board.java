@@ -1,138 +1,87 @@
 package game;
 
-import java.util.ArrayList;
-import java.util.List;
-import javafx.scene.paint.Color;
+import java.util.Random;
 
 public class Board {
-
-    private final int width;
-    private final int height;
-    private final Cell[][] grid;
-    private final List<Robot> robots = new ArrayList<>();
+    private Cell[][] cells;
+    private int width;
+    private int height;
+    private Random random = new Random();
 
     public Board(int width, int height) {
         this.width = width;
         this.height = height;
-        this.grid = new Cell[height][width]; // [row][col]
-        initializeGrid();
-    }
-
-    private void initializeGrid() {
+        this.cells = new Cell[height][width];
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                grid[y][x] = new Cell(x, y);
+                cells[y][x] = new Cell(x, y);
             }
         }
     }
 
-    public boolean addRobot(Robot robot, int x, int y) {
-        if (isInBounds(x, y) && grid[y][x].isEmpty()) {
-            grid[y][x].setEntity(robot);
-            robot.setPosition(x, y);
-            robots.add(robot);
-            return true;
-        }
-        return false;
-    }
-
-    public boolean moveRobot(Robot robot, int newX, int newY) {
-        if (!isInBounds(newX, newY)) return false;
-
-        int oldX = robot.getX();
-        int oldY = robot.getY();
-
-        if (grid[newY][newX].isEmpty()) {
-            grid[oldY][oldX].removeEntity();
-            grid[newY][newX].setEntity(robot);
-            robot.setPosition(newX, newY);
-            return true;
-        }
-
-        return false;
-    }
-
-    public boolean shoot(Robot shooter, int targetX, int targetY) {
-        if (!isInBounds(targetX, targetY)) return false;
-
-        Cell targetCell = grid[targetY][targetX];
-        if (targetCell.hasRobot()) {
-            targetCell.getRobot().takeDamage(); // این متد بدون پارامتر تعریف شده
-            return true;
-        }
-
-        return false;
-    }
+    public int getWidth() { return width; }
+    public int getHeight() { return height; }
+    public Cell getCell(int x, int y) { return isInBounds(x, y) ? cells[y][x] : null; }
 
     public boolean isInBounds(int x, int y) {
         return x >= 0 && x < width && y >= 0 && y < height;
     }
 
-    public Cell getCell(int x, int y) {
-        if (!isInBounds(x, y)) return null;
-        return grid[y][x];
-    }
-
-    public Entity getEntityAt(int x, int y) {
-        if (!isInBounds(x, y)) return null;
-
-        Cell cell = grid[y][x];
-
-        if (cell.hasRobot()) return cell.getRobot();
-        if (cell.hasWall()) return cell.getWall();
-        if (cell.hasMine()) return cell.getMine();
-
-        return null;
-    }
-
-    public int getWidth() { return width; }
-
-    public int getHeight() { return height; }
-
-    /**
-     * برمی‌گرداند نوع سلول در مختصات مشخص.
-     * @param x مختصات ستون
-     * @param y مختصات سطر
-     * @return نوع سلول CellType یا null اگر خارج از محدوده باشد
-     */
-    public CellType getCellType(int x, int y) {
-        if (!isInBounds(x, y)) return null;
-        return grid[y][x].getType();
-    }
-
-    /**
-     * برمی‌گرداند رنگ مناسب برای نوع سلول در مختصات مشخص.
-     * @param x مختصات ستون
-     * @param y مختصات سطر
-     * @return رنگ رنگ‌آمیزی سلول
-     */
-    public Color getCellColor(int x, int y) {
-        CellType type = getCellType(x, y);
-        if (type == null) return Color.BLACK;
-
-        switch (type) {
-            case EMPTY:
-                return Color.WHITE;
-            case WALL:
-                return Color.DARKGRAY;
-            case ROBOT:
-                return Color.BLUE;
-            case MINE:
-                return Color.RED;
-            default:
-                return Color.LIGHTGRAY;
+    public void addObstacles(GameConfig config) {
+        for (int i = 0; i < config.getMineCount(); i++) {
+            int x, y;
+            do {
+                x = random.nextInt(width);
+                y = random.nextInt(height);
+            } while (getCell(x, y).getEntity() != null);
+            getCell(x, y).setEntity(new Mine(x, y, Obstacle.ObstacleType.MINE));
         }
     }
 
-    /**
-     * متد نمونه برای ایجاد یک نقشه تستی با چند دیوار، مین و ربات.
-     */
     public void generateTestMap() {
-        addRobot(new Robot(1, 1), 1, 1);
-        addRobot(new Robot(3, 3), 3, 3);
+        // مین‌ها رو به‌صورت دستی اضافه می‌کنم
+        getCell(2, 2).setEntity(new Mine(2, 2, Obstacle.ObstacleType.MINE));
+        getCell(4, 4).setEntity(new Mine(4, 4, Obstacle.ObstacleType.MINE));
+        getCell(6, 6).setEntity(new Mine(6, 6, Obstacle.ObstacleType.MINE));
+    }
 
-        grid[0][0].setEntity(new WoodenWall(0, 0));
-        grid[2][2].setEntity(new SteelWall(2, 2));
-        grid[4][4].setEntity(new Mine(4, 4));
+    public boolean moveRobot(Robot robot, int newRow, int newCol) {
+        if (!isInBounds(newCol, newRow)) return false; // توجه: x=col, y=row
+        Cell currentCell = getCell(robot.getCol(), robot.getRow());
+        Cell newCell = getCell(newCol, newRow);
+        if (newCell.getEntity() == null) {
+            currentCell.removeEntity();
+            newCell.setEntity(robot);
+            robot.setPosition(newRow, newCol);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean shoot(Robot shooter, int targetX, int targetY) {
+        if (!isInBounds(targetX, targetY)) return false;
+        Entity target = getCell(targetX, targetY).getEntity();
+        if (target != null && target != shooter) {
+            if (target instanceof SteelWall) {
+                SteelWall wall = (SteelWall) target;
+                wall.takeBullet(this);
+            } else if (target instanceof WoodenWall) {
+                WoodenWall wall = (WoodenWall) target;
+                wall.takeBullet(this);
+            } else if (target instanceof Obstacle) {
+                ((Obstacle) target).applyEffect(shooter); // اعمال اثر موانع دیگر
+            } else if (target instanceof Robot) {
+                ((Robot) target).takeDamage(33); // آسیب به ربات هدف
+            }
+            return true; // برخورد موفق
+        }
+        return false;
+    }
+
+    public Entity getEntityAt(int x, int y) {
+        if (isInBounds(x, y)) {
+            return getCell(x, y).getEntity();
+        }
+        return null;
     }
 }

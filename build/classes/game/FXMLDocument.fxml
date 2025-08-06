@@ -1,16 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.layout.AnchorPane?>
-
-<AnchorPane id="AnchorPane" prefHeight="200" prefWidth="320" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="game.FXMLDocumentController">
-
-    <children>
-        <Button layoutX="110" layoutY="40" text="شروع بازی" onAction="#handleStartGame" fx:id="startButton" />
-        <Button layoutX="110" layoutY="90" text="تنظیمات" onAction="#handleSettings" fx:id="settingsButton" />
-        <Button layoutX="110" layoutY="140" text="خروج" onAction="#handleExit" fx:id="exitButton" />
-    </children>
-
-</AnchorPane>
-
+<?import javafx.scene.layout.VBox?>
+<VBox xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="game.FXMLDocumentController" alignment="CENTER" spacing="30" style="-fx-background-color: #f0f0f0; -fx-padding: 100;">
+    <Button text="ورود به بازی" onAction="#handleStartGame" style="-fx-font-size: 20px; -fx-pref-width: 200;" />
+    <Button text="تنظیمات" onAction="#handleSettings" style="-fx-font-size: 20px; -fx-pref-width: 200;" />
+    <Button text="خروج" onAction="#handleExit" style="-fx-font-size: 20px; -fx-pref-width: 200;" />
+</VBox>

@@ -2,42 +2,43 @@ package game;
 
 import javafx.scene.paint.Color;
 
-/**
- * Represents a steel wall that is destroyed after 3 hits.
- * @author SADR
- */
-public class SteelWall extends Entity {
-    private int health = 3;
-    private static final Color COLOR = Color.GRAY;
+public class SteelWall extends Obstacle {
+    private int hitPoints = 3;
 
-    public SteelWall(int x, int y) {
-        super(x, y);
+    public SteelWall(int row, int col) {
+        super(row, col, ObstacleType.STEEL_WALL);
     }
 
-    public void takeDamage() {
-        if (health > 0) {
-            health--;
-            if (health == 0) {
-                System.out.println("Steel wall at (" + x + ", " + y + ") destroyed!");
-            }
-        }
-    }
-
-    public boolean isDestroyed() {
-        return health <= 0;
-    }
-
-    public Color getColor() {
-        return COLOR;
-    }
-
-    public int getHealth() {
-        return health;
+    public int getHitPoints() {
+        return hitPoints;
     }
 
     @Override
-    public char getSymbol() {
-        return 'S';
+    public void applyEffect(Robot robot) {
+        // فقط مانع حرکت می‌شود
+        System.out.println("ربات به دیوار فولادی در (" + getCol() + ", " + getRow() + ") برخورد کرد!");
+    }
+
+    /**
+     * کاهش جان دیوار هنگام شلیک گلوله.
+     * @param board مرجع به صفحه بازی برای حذف موجودیت در صورت نابودی
+     * @return true اگر دیوار نابود شده باشد، false در غیر اینصورت
+     */
+    public boolean takeBullet(Board board) {
+        hitPoints--;
+        System.out.println("دیوار فولادی در (" + getCol() + ", " + getRow() + ") یک گلوله خورد! باقی‌مانده: " + hitPoints);
+        if (hitPoints <= 0) {
+            System.out.println("دیوار فولادی در (" + getCol() + ", " + getRow() + ") نابود شد!");
+            board.getCell(getCol(), getRow()).removeEntity();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void update() {
+        // دیوار فولادی نیاز به بروزرسانی خاصی ندارد، ولی باید این متد override شود.
     }
 }
+
 

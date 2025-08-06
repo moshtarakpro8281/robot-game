@@ -2,49 +2,43 @@ package game;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.RadioButton;
-import javafx.scene.control.Spinner;
-import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.ToggleGroup;
 import javafx.stage.Stage;
 
 public class SettingsController {
 
-    private ToggleGroup gameTypeGroup; // ساخته می‌شود در initialize()
-
     @FXML
     private RadioButton pvpRadio, pvAIRadio, aiVsAiRadio;
 
-    @FXML
-    private Spinner<Integer> widthSpinner;
-    @FXML
-    private Spinner<Integer> heightSpinner;
+    private ToggleGroup gameTypeGroup = new ToggleGroup();
 
     private Stage dialogStage;
 
     private String selectedGameType = "pvp"; // مقدار پیش‌فرض
-    private int boardWidth = 15;
-    private int boardHeight = 15;
+    private boolean confirmed = false; // Track if user confirmed their choice
 
+    // متد برای ست کردن پنجره
     public void setDialogStage(Stage stage) {
         this.dialogStage = stage;
     }
 
+    // این متد هنگام بارگذاری FXML به صورت خودکار فراخوانی می‌شود
     @FXML
     private void initialize() {
-        // ایجاد ToggleGroup و اتصال رادیوها
-        gameTypeGroup = new ToggleGroup();
+        // اتصال رادیوباتن‌ها به ToggleGroup
         pvpRadio.setToggleGroup(gameTypeGroup);
         pvAIRadio.setToggleGroup(gameTypeGroup);
         aiVsAiRadio.setToggleGroup(gameTypeGroup);
 
-        // مقداردهی اولیه اسپینرها
-        widthSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(5, 50, boardWidth));
-        heightSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(5, 50, boardHeight));
+        // مقدار پیش‌فرض انتخاب شده
+        pvpRadio.setSelected(true);
     }
 
+    // متد دکمه تأیید
     @FXML
     private void handleConfirm() {
         RadioButton selectedRadio = (RadioButton) gameTypeGroup.getSelectedToggle();
+
         if (selectedRadio == pvpRadio) {
             selectedGameType = "pvp";
         } else if (selectedRadio == pvAIRadio) {
@@ -53,38 +47,28 @@ public class SettingsController {
             selectedGameType = "aiVsAi";
         }
 
-        boardWidth = widthSpinner.getValue();
-        boardHeight = heightSpinner.getValue();
-
+        confirmed = true;
         System.out.println("نوع بازی انتخاب شده: " + selectedGameType);
-        System.out.println("ابعاد نقشه: " + boardWidth + " × " + boardHeight);
 
-        dialogStage.close();
+        if (dialogStage != null) {
+            dialogStage.close(); // بستن پنجره تنظیمات
+        }
+    }
+
+    // Add cancel button handler
+    @FXML
+    private void handleCancel() {
+        confirmed = false;
+        if (dialogStage != null) {
+            dialogStage.close();
+        }
     }
 
     public String getSelectedGameType() {
         return selectedGameType;
     }
 
-    public int getBoardWidth() {
-        return boardWidth;
-    }
-
-    public int getBoardHeight() {
-        return boardHeight;
-    }
-
-    public void setBoardWidth(int width) {
-        this.boardWidth = width;
-        if (widthSpinner != null) {
-            widthSpinner.getValueFactory().setValue(width);
-        }
-    }
-
-    public void setBoardHeight(int height) {
-        this.boardHeight = height;
-        if (heightSpinner != null) {
-            heightSpinner.getValueFactory().setValue(height);
-        }
+    public boolean isConfirmed() {
+        return confirmed;
     }
 }

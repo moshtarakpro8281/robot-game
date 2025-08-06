@@ -1,38 +1,37 @@
 package game;
 
-import javafx.scene.paint.Color;
+public class WoodenWall extends Obstacle {
+    private int hitPoints = 1;
 
-public class WoodenWall extends Entity {
-    private int health = 1;
-    private static final Color COLOR = Color.BROWN;
-
-    public WoodenWall(int x, int y) {
-        super(x, y);
+    public WoodenWall(int row, int col) {
+        super(row, col, ObstacleType.WOODEN_WALL);
     }
 
-    public void takeDamage() {
-        if (health > 0) {
-            health--;
-            if (health == 0) {
-                System.out.println("Wooden wall at (" + x + ", " + y + ") destroyed!");
-            }
-        }
-    }
-
-    public boolean isDestroyed() {
-        return health <= 0;
-    }
-
-    public Color getColor() {
-        return COLOR;
-    }
-
-    public int getHealth() {
-        return health;
+    public int getHitPoints() {
+        return hitPoints;
     }
 
     @Override
-    public char getSymbol() {
-        return 'W';
+    public void applyEffect(Robot robot) {
+        if (robot.isAlive()) {
+            robot.takeDamage(10);
+            System.out.println("ربات به دیوار چوبی در (" + getCol() + ", " + getRow() + ") برخورد کرد و 10% سلامتش کم شد!");
+        }
+    }
+
+    public boolean takeBullet(Board board) {
+        hitPoints--;
+        System.out.println("دیوار چوبی در (" + getCol() + ", " + getRow() + ") یک گلوله خورد! باقی‌مانده: " + hitPoints);
+        if (hitPoints <= 0) {
+            System.out.println("دیوار چوبی در (" + getCol() + ", " + getRow() + ") نابود شد!");
+            board.getCell(getCol(), getRow()).removeEntity();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void update() {
+        // نیازی به بروزرسانی نیست ولی متد abstract رو override کردیم
     }
 }

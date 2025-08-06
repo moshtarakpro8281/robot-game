@@ -10,12 +10,19 @@ public class Game extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        Parent root = FXMLLoader.load(getClass().getResource("FXMLDocument.fxml"));
+        // بارگذاری فایل FXML از همان پکیج game
+        Parent root = FXMLLoader.load(getClass().getResource("Game.fxml"));
+        Scene scene = new Scene(root);
 
-        Scene scene = new Scene(root, 320, 200); // اندازه پنجره مشخص شد
+        // اگر لازم است، اندازه صحنه را از FXML بگیر یا تنظیم کن
+        // اینجا بدون تعیین اندازه اولیه می‌گذاریم تا از FXML بگیرد
 
-        stage.setTitle("نبرد ربات‌ها "); // عنوان پنجره
+        stage.setTitle("نبرد ربات‌ها");
         stage.setScene(scene);
+
+        // دادن فوکوس به صحنه برای دریافت رویدادهای صفحه‌کلید
+        scene.getRoot().requestFocus();
+
         stage.show();
     }
 
@@ -23,4 +30,3 @@ public class Game extends Application {
         launch(args);
     }
 }
-

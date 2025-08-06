@@ -1,51 +1,51 @@
 package game;
 
-/**
- * کلاس پایه برای تمام موجودیت‌های بازی (ربات، دیوار، مین و ...)
- */
 public abstract class Entity {
-    protected int x, y;
+    private int row;  // ردیف در صفحه
+    private int col;  // ستون در صفحه
+    private boolean visible = true;
+
+    public Entity(int row, int col) {
+        this.row = row;
+        this.col = col;
+        this.visible = true;
+    }
+
+    protected Entity() {
+        this(0, 0);
+    }
+
+    // متدهای getter و setter
+    public int getRow() { return row; }
+    public int getCol() { return col; }
+
+    public void setRow(int row) { this.row = row; }
+    public void setCol(int col) { this.col = col; }
+
+    public void setPosition(int row, int col) {
+        this.row = row;
+        this.col = col;
+    }
+
+    public boolean isVisible() { return visible; }
+    public void setVisible(boolean visible) { this.visible = visible; }
 
     /**
-     * Constructor to initialize the entity's position.
-     * @param x The x-coordinate of the entity.
-     * @param y The y-coordinate of the entity.
+     * فاصله منهتن بین دو موجودیت
      */
-    public Entity(int x, int y) {
-        this.x = x;
-        this.y = y;
+    public int distanceTo(Entity other) {
+        return Math.abs(this.row - other.row) + Math.abs(this.col - other.col);
     }
 
     /**
-     * Gets the x-coordinate of the entity.
-     * @return The x-coordinate.
+     * بررسی اینکه آیا دو موجودیت در یک موقعیت هستند یا خیر
      */
-    public int getX() {
-        return x;
+    public boolean isAtSamePosition(Entity other) {
+        return this.row == other.row && this.col == other.col;
     }
 
     /**
-     * Gets the y-coordinate of the entity.
-     * @return The y-coordinate.
+     * متد انتزاعی که هر کلاس فرزند باید پیاده‌سازی کند
      */
-    public int getY() {
-        return y;
-    }
-
-    /**
-     * Sets the position of the entity.
-     * @param x New x-coordinate.
-     * @param y New y-coordinate.
-     */
-    public void setPosition(int x, int y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    /**
-     * نماد موجودیت برای نمایش در نقشه یا رابط گرافیکی.
-     * هر زیرکلاس باید آن را پیاده‌سازی کند.
-     * @return نماد کاراکتری موجودیت
-     */
-    public abstract char getSymbol();
+    public abstract void update();
 }
