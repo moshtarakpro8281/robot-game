@@ -3,130 +3,291 @@ package game;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.awt.Point;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-
-import game.Robot.Direction;
+import java.util.Random;
 
 public class GameController {
 
-    @FXML private GridPane mapGrid;
-    @FXML private Button moveUpButton, moveDownButton, moveLeftButton, moveRightButton, shootButton;
-    @FXML private Label ammoLabel, activeAmmoLabel;
-    @FXML private ProgressBar health1, health2, health3, health4;
+    // FXML components
+    @FXML
+    private VBox topVBox;
+    @FXML
+    private HBox ammoHBox;
+    @FXML
+    private Label ammoLabel;
+    @FXML
+    private Label activeAmmoLabel;
+    @FXML
+    private VBox healthVBox;
+    @FXML
+    private HBox healthRow1;
+    @FXML
+    private HBox healthRow2;
+    @FXML
+    private HBox healthRow3;
+    @FXML
+    private HBox healthRow4;
+    @FXML
+    private ProgressBar health1;
+    @FXML
+    private ProgressBar health2;
+    @FXML
+    private ProgressBar health3;
+    @FXML
+    private ProgressBar health4;
+    @FXML
+    private GridPane mapGrid;
+    @FXML
+    private Button selectRobot1Button;
+    @FXML
+    private Button selectRobot2Button;
+    @FXML
+    private Button selectRobot3Button;
+    @FXML
+    private Button selectRobot4Button;
+    @FXML
+    private Button moveLeftButton;
+    @FXML
+    private Button moveUpButton;
+    @FXML
+    private Button moveDownButton;
+    @FXML
+    private Button moveRightButton;
+    @FXML
+    private Button shootButton;
 
-    private final int mapHeight = 15;
-    private final int mapWidth = 15;
-    private Cell[][] map = new Cell[mapHeight][mapWidth];
+    // New: For matrix debug scroller
+    @FXML
+    private TextArea debugTextArea;
+
+    private int mapHeight = 12;
+    private int mapWidth = 12;
+    private Cell[][] map;
 
     private List<Player> players = new ArrayList<>();
     private int currentPlayerIndex = 0;
     private int currentRobotIndex = 0;
+    private int globalTurnIndex = 0;
 
-    private int globalRobotTurnIndex = 0;
+    private final List<int[]> turnOrder = Arrays.asList(
+            new int[]{0, 0}, // R1
+            new int[]{0, 1}, // R2
+            new int[]{1, 0}, // R3
+            new int[]{1, 1}  // R4
+    );
 
-    private int currentRow;
-    private int currentCol;
-    private Circle bullet;
+    private boolean isManualSelectionMode = false;
+    private int manuallySelectedPlayerIndex = 0;
+    private int manuallySelectedRobotIndex = 0;
 
     private boolean shotFired = false;
     private boolean isPlayerTurnActive = false;
-
     private List<AIPlayer> aiPlayers = new ArrayList<>();
 
-    private Timeline shootingTimeline;
+    private BattleMode battleMode = BattleMode.PLAYER_VS_PLAYER;
 
-    // Add game mode field
-    private String gameMode = "pvp"; // Default game mode
+    private int currentRow = 0;
+    private int currentCol = 0;
 
-    // Add this method to set the game mode from settings
-    public void setGameMode(String gameMode) {
-        this.gameMode = gameMode;
-        System.out.println("Game mode set to: " + gameMode);
+    private RenderFixer renderFixer;
+    private Random random = new Random();
+
+    private boolean isMoving = false;
+
+    // Getters and Setters
+    public Cell[][] getMap() {
+        return map;
+    }
+
+    public void setMapDimensions(int width, int height) {
+        this.mapWidth = width;
+        this.mapHeight = height;
+        this.map = new Cell[mapHeight][mapWidth];
+        initMap();
+    }
+
+    public void setMap(Cell[][] map) {
+        this.map = map;
+        this.mapHeight = map.length;
+        this.mapWidth = map[0].length;
+    }
+
+    public int getBoardWidth() {
+        return mapWidth;
+    }
+
+    public int getBoardHeight() {
+        return mapHeight;
+    }
+
+    public void setRenderFixer(RenderFixer renderFixer) {
+        this.renderFixer = renderFixer;
+    }
+
+    public RenderFixer getRenderFixer() {
+        return renderFixer;
+    }
+
+    public void setGameMode(BattleMode mode) {
+        this.battleMode = mode;
+        System.out.println("Game mode set to: " + mode);
+    }
+
+    private Robot getSelectedRobot() {
+        if (isManualSelectionMode) {
+            if (manuallySelectedPlayerIndex < players.size() &&
+                    manuallySelectedRobotIndex < players.get(manuallySelectedPlayerIndex).getRobots().size()) {
+                return players.get(manuallySelectedPlayerIndex).getRobots().get(manuallySelectedRobotIndex);
+            }
+        } else {
+            return getCurrentRobot();
+        }
+        return null;
+    }
+
+    // FXML event handlers
+    @FXML
+    public void selectRobot1(ActionEvent event) {
+        selectRobot(0, 0);
+        activeAmmoLabel.setText("Robot 1 selected");
+        isManualSelectionMode = true;
+        isPlayerTurnActive = true;
+        updateUI();
+    }
+
+    @FXML
+    public void selectRobot2(ActionEvent event) {
+        selectRobot(0, 1);
+        activeAmmoLabel.setText("Robot 2 selected");
+        isManualSelectionMode = true;
+        isPlayerTurnActive = true;
+        updateUI();
+    }
+
+    @FXML
+    public void selectRobot3(ActionEvent event) {
+        selectRobot(1, 0);
+        activeAmmoLabel.setText("Robot 3 selected");
+        isManualSelectionMode = true;
+        isPlayerTurnActive = true;
+        updateUI();
+    }
+
+    @FXML
+    public void selectRobot4(ActionEvent event) {
+        selectRobot(1, 1);
+        activeAmmoLabel.setText("Robot 4 selected");
+        isManualSelectionMode = true;
+        isPlayerTurnActive = true;
+        updateUI();
+    }
+
+    @FXML
+    public void moveRobotLeft(ActionEvent event) {
+        moveSelectedRobot(-1, 0, Direction.LEFT);
+        updateUI();
+        // Removed nextTurn() to allow unlimited moves until shoot
+    }
+
+    @FXML
+    public void moveRobotUp(ActionEvent event) {
+        moveSelectedRobot(0, -1, Direction.UP);
+        updateUI();
+        // Removed nextTurn() to allow unlimited moves until shoot
+    }
+
+    @FXML
+    public void moveRobotDown(ActionEvent event) {
+        moveSelectedRobot(0, 1, Direction.DOWN);
+        updateUI();
+        // Removed nextTurn() to allow unlimited moves until shoot
+    }
+
+    @FXML
+    public void moveRobotRight(ActionEvent event) {
+        moveSelectedRobot(1, 0, Direction.RIGHT);
+        updateUI();
+        // Removed nextTurn() to allow unlimited moves until shoot
+    }
+
+    @FXML
+    public void shoot(ActionEvent event) {
+        shootSelectedRobot();
+        // Keep nextTurn() here, as turn ends after shoot
+    }
+
+    @FXML
+    public void handleExit(ActionEvent event) {
+        Platform.exit();
+        System.out.println("Game exited");
+    }
+
+    public void selectRobot(int playerIndex, int robotIndex) {
+        if (playerIndex < players.size() &&
+                robotIndex < players.get(playerIndex).getRobots().size()) {
+            isManualSelectionMode = true;
+            manuallySelectedPlayerIndex = playerIndex;
+            manuallySelectedRobotIndex = robotIndex;
+            System.out.println("Manually selected robot: " +
+                    players.get(playerIndex).getRobots().get(robotIndex).getName() +
+                    ", isPlayerTurnActive=" + isPlayerTurnActive);
+        }
+    }
+
+    public void disableManualSelection() {
+        isManualSelectionMode = false;
+        System.out.println("Manual selection disabled, using turn order");
     }
 
     @FXML
     public void initialize() {
+        System.out.println("Initializing game...");
+        if (map == null) {
+            map = new Cell[mapHeight][mapWidth];
+        }
+
+        try {
+            battleMode = Settings.getBattleMode();
+            if (battleMode == null) {
+                System.out.println("Warning: Settings.getBattleMode() returned null, using default");
+                battleMode = BattleMode.PLAYER_VS_PLAYER;
+            }
+        } catch (Exception e) {
+            System.out.println("Warning: Could not load battle mode from Settings, using default: " + e.getMessage());
+            battleMode = BattleMode.PLAYER_VS_PLAYER;
+        }
+
         initMap();
-        // Don't initialize players here - do it after game mode is set
-        renderMap();
-    }
-
-    // Call this method after setting the game mode
-    public void startGame() {
         initPlayersAndRobots();
+        updateUI();
+        System.out.println("Game initialized with mode: " + battleMode);
+    }
+
+    public void startGame() {
         initAIPlayers();
-        updateUI();
-
-        mapGrid.setFocusTraversable(true);
-        mapGrid.requestFocus();
-
-        mapGrid.setOnKeyPressed(this::handleKeyPressed);
-
+        isPlayerTurnActive = (battleMode != BattleMode.AI_VS_AI);
+        System.out.println("Game started, isPlayerTurnActive=" + isPlayerTurnActive);
         startTurnForCurrentRobot();
-    }
-
-    private void initAIPlayers() {
-        aiPlayers.clear();
-        for (Player p : players) {
-            if (p.isAI()) {
-                for (Robot r : p.getRobots()) {
-                    AIPlayer ai = new AIPlayer(r, AIPlayer.AILevel.MEDIUM);
-                    aiPlayers.add(ai);
-                }
-            }
-        }
-    }
-
-    private void handleKeyPressed(KeyEvent event) {
-        if (shotFired) return;
-
-        Player currentPlayer = players.get(currentPlayerIndex);
-        if (currentPlayer.isAI()) return;
-        if (!isPlayerTurnActive) return;
-
-        KeyCode code = event.getCode();
-
-        if (currentPlayerIndex == 0) {
-            switch (code) {
-                case W -> moveRobot(0, -1, Direction.UP);
-                case A -> moveRobot(-1, 0, Direction.LEFT);
-                case S -> moveRobot(0, 1, Direction.DOWN);
-                case D -> moveRobot(1, 0, Direction.RIGHT);
-                case C -> shoot();
-                case R -> reloadAmmo();
-            }
-        } else if (currentPlayerIndex == 1) {
-            switch (code) {
-                case UP -> moveRobot(0, -1, Direction.UP);
-                case LEFT -> moveRobot(-1, 0, Direction.LEFT);
-                case DOWN -> moveRobot(0, 1, Direction.DOWN);
-                case RIGHT -> moveRobot(1, 0, Direction.RIGHT);
-                case M -> shoot();
-            }
-        }
-    }
-
-    private void reloadAmmo() {
-        Robot robot = getCurrentRobot();
-        robot.setAmmo(10);
-        // Optional: Reset damage when reloading
-        robot.resetDamage();
         updateUI();
-        System.out.println("مهمات ربات " + robot.getName() + " پر شد و قدرت آسیب بازگردانده شد.");
     }
 
     private void initMap() {
@@ -135,237 +296,570 @@ public class GameController {
                 map[r][c] = new Cell(r, c);
             }
         }
+        generateRandomObstacles();
+        updateUI();
     }
 
-    // Updated method to use the game mode
+    private void generateRandomObstacles() {
+        List<Point> safeZones = new ArrayList<>();
+        safeZones.add(new Point(0, 0)); // R1
+        safeZones.add(new Point(0, 1)); // R2
+        safeZones.add(new Point(11, 11)); // R3
+        safeZones.add(new Point(11, 10)); // R4
+
+        List<Point> expandedSafeZones = new ArrayList<>();
+        for (Point p : safeZones) {
+            for (int dr = -2; dr <= 2; dr++) {
+                for (int dc = -2; dc <= 2; dc++) {
+                    int newR = p.x + dr;
+                    int newC = p.y + dc;
+                    if (isInBounds(newR, newC)) {
+                        expandedSafeZones.add(new Point(newR, newC));
+                    }
+                }
+            }
+        }
+        safeZones = expandedSafeZones;
+
+        generateMazeWalls(safeZones);
+        generateMazeMines(safeZones);
+        System.out.println("Generated maze-like obstacle arrangement");
+    }
+
+    private void generateMazeWalls(List<Point> safeZones) {
+        createHorizontalCorridors(safeZones);
+        createVerticalCorridors(safeZones);
+        createMazeRooms(safeZones);
+        createConnectingPassages(safeZones);
+    }
+
+    private void createHorizontalCorridors(List<Point> safeZones) {
+        int[] corridorRows = {3, 6, 9};
+        for (int row : corridorRows) {
+            for (int col = 1; col < mapWidth - 1; col++) {
+                if (!isInSafeZone(row, col, safeZones) && map[row][col].isEmpty()) {
+                    if (random.nextDouble() < 0.3) {
+                        int wallType = random.nextInt(3);
+                        createWall(row, col, wallType);
+                    }
+                }
+            }
+        }
+        System.out.println("Created horizontal corridors");
+    }
+
+    private void createVerticalCorridors(List<Point> safeZones) {
+        int[] corridorCols = {3, 6, 9};
+        for (int col : corridorCols) {
+            for (int row = 1; row < mapHeight - 1; row++) {
+                if (!isInSafeZone(row, col, safeZones) && map[row][col].isEmpty()) {
+                    if (random.nextDouble() < 0.3) {
+                        int wallType = random.nextInt(3);
+                        createWall(row, col, wallType);
+                    }
+                }
+            }
+        }
+        System.out.println("Created vertical corridors");
+    }
+
+    private void createMazeRooms(List<Point> safeZones) {
+        int[][] roomCenters = {{2, 2}, {2, 9}, {9, 2}, {9, 9}, {5, 5}};
+        for (int[] center : roomCenters) {
+            int centerRow = center[0];
+            int centerCol = center[1];
+            for (int dr = -1; dr <= 1; dr++) {
+                for (int dc = -1; dc <= 1; dc++) {
+                    int r = centerRow + dr;
+                    int c = centerCol + dc;
+                    if (isInBounds(r, c) && !isInSafeZone(r, c, safeZones) && map[r][c].isEmpty()) {
+                        if (!(dr == 0 && dc == 0) && random.nextDouble() < 0.6) {
+                            int wallType = random.nextInt(3);
+                            createWall(r, c, wallType);
+                        }
+                    }
+                }
+            }
+        }
+        System.out.println("Created maze rooms");
+    }
+
+    private void createConnectingPassages(List<Point> safeZones) {
+        for (int i = 0; i < 15; i++) {
+            int row = random.nextInt(mapHeight);
+            int col = random.nextInt(mapWidth);
+            if (!isInSafeZone(row, col, safeZones) && map[row][col].isEmpty()) {
+                int wallType = random.nextInt(3);
+                createWall(row, col, wallType);
+            }
+        }
+        System.out.println("Created connecting passages");
+    }
+
+    private void generateMazeMines(List<Point> safeZones) {
+        int[][] minePositions = {
+                {2, 5}, {5, 3}, {7, 4}, {3, 10},
+                {8, 7}, {10, 3}, {5, 11}, {1, 10},
+                {11, 2}, {7, 11}
+        };
+        for (int[] pos : minePositions) {
+            int r = pos[0];
+            int c = pos[1];
+            if (!isInSafeZone(r, c, safeZones) && map[r][c].isEmpty()) {
+                map[r][c].setEntity(new StandardMine(r, c));
+                System.out.println("Added Mine at (" + r + "," + c + ")");
+            }
+        }
+    }
+
+    private boolean isInSafeZone(int r, int c, List<Point> safeZones) {
+        for (Point safe : safeZones) {
+            if (safe.x == r && safe.y == c) return true;
+        }
+        return false;
+    }
+
+    private void createWall(int r, int c, int wallType) {
+        switch (wallType) {
+            case 0:
+                map[r][c].setEntity(new NormalWall(r, c));
+                System.out.println("Added Normal Wall at (" + r + "," + c + ")");
+                break;
+            case 1:
+                map[r][c].setEntity(new SteelWall(r, c));
+                System.out.println("Added Steel Wall at (" + r + "," + c + ")");
+                break;
+            case 2:
+                map[r][c].setEntity(new WoodenWall(r, c));
+                System.out.println("Added Wooden Wall at (" + r + "," + c + ")");
+                break;
+        }
+    }
+
+    public static class SteelWall extends Obstacle {
+        private int hitCount = 0;
+
+        public SteelWall(int x, int y) {
+            super(x, y, ObstacleType.STEEL_WALL);
+        }
+
+        @Override
+        public void applyEffect(Robot robot) {
+            hitCount++;
+            if (hitCount >= 3) {
+                System.out.println("Steel Wall at (" + getX() + ", " + getY() + ") has been destroyed!");
+            } else {
+                System.out.println("Steel Wall at (" + getX() + ", " + getY() + ") has been hit! Total hits: " + hitCount);
+            }
+        }
+
+        public void hit() {
+            hitCount++;
+            if (hitCount >= 3) {
+                System.out.println("Steel Wall at (" + getX() + ", " + getY() + ") is destroyed after 3 hits!");
+            }
+        }
+
+        public boolean isDestroyed() {
+            return hitCount >= 3;
+        }
+
+        public int getHitCount() {
+            return hitCount;
+        }
+    }
+
+    public static class WoodenWall extends Obstacle {
+        private int hitCount = 0;
+
+        public WoodenWall(int x, int y) {
+            super(x, y, ObstacleType.WOODEN_WALL);
+        }
+
+        @Override
+        public void applyEffect(Robot robot) {
+            hitCount++;
+            if (hitCount >= 1) {
+                System.out.println("Wooden Wall at (" + getX() + ", " + getY() + ") has been destroyed!");
+            } else {
+                System.out.println("Wooden Wall at (" + getX() + ", " + getY() + ") has been hit! Total hits: " + hitCount);
+            }
+        }
+
+        public void hit() {
+            hitCount++;
+            if (hitCount >= 1) {
+                System.out.println("Wooden Wall at (" + getX() + ", " + getY() + ") is destroyed after 1 hit!");
+            }
+        }
+
+        public boolean isDestroyed() {
+            return hitCount >= 1;
+        }
+
+        public int getHitCount() {
+            return hitCount;
+        }
+    }
+
     private void initPlayersAndRobots() {
+        players.clear();
         Player p1, p2;
 
-        // Create players based on the selected game mode
-        switch (gameMode) {
-            case "pvp":
-                // Player vs Player
-                p1 = new Player("Player1", false); // Human player
-                p2 = new Player("Player2", false); // Human player
-                System.out.println("Initialized Player vs Player mode");
+        List<Robot> robots1 = new ArrayList<>();
+        List<Robot> robots2 = new ArrayList<>();
+
+        switch (battleMode) {
+            case PLAYER_VS_PLAYER:
+                p1 = new Player("Player1", false, robots1);
+                p2 = new Player("Player2", false, robots2);
+                System.out.println("Game mode: PvP");
                 break;
-            case "pvAI":
-                // Player vs AI
-                p1 = new Player("Player1", false); // Human player
-                p2 = new Player("Player2", true);  // AI player
-                System.out.println("Initialized Player vs AI mode");
+            case PLAYER_VS_AI:
+                p1 = new Player("Player1", false, robots1);
+                p2 = new Player("Player2", true, robots2);
+                System.out.println("Game mode: PvAI");
                 break;
-            case "aiVsAi":
-                // AI vs AI
-                p1 = new Player("Player1", true);  // AI player
-                p2 = new Player("Player2", true);  // AI player
-                System.out.println("Initialized AI vs AI mode");
+            case AI_VS_AI:
+                p1 = new Player("Player1", true, robots1);
+                p2 = new Player("Player2", true, robots2);
+                System.out.println("Game mode: AI vs AI");
                 break;
             default:
-                // Default to PvP if unknown mode
-                p1 = new Player("Player1", false);
-                p2 = new Player("Player2", false);
-                System.out.println("Unknown game mode, defaulting to Player vs Player");
+                p1 = new Player("Player1", false, robots1);
+                p2 = new Player("Player2", false, robots2);
+                System.out.println("Game mode: PvP (default)");
                 break;
         }
 
-        // Create robots (same as before)
-        Robot r1 = new Robot("R1", 0, 0, Color.RED);
-        Robot r2 = new Robot("R2", 0, 1, Color.RED);
-        Robot r3 = new Robot("R3", 14, 14, Color.BLUE);
-        Robot r4 = new Robot("R4", 14, 13, Color.BLUE);
+        Robot r1 = new Robot("R1", 0, 0, "Red", Direction.RIGHT);
+        Robot r2 = new Robot("R2", 0, 1, "Red", Direction.RIGHT);
+        Robot r3 = new Robot("R3", 11, 11, "Blue", Direction.LEFT);
+        Robot r4 = new Robot("R4", 11, 10, "Blue", Direction.LEFT);
 
-        // Set robot properties (same as before)
-        r1.setAmmo(10);
-        r1.setDirection(Direction.RIGHT);
-        r1.setRange(3);
-        r1.setDamage(20);
+        setRobotAttributes(r1);
+        setRobotAttributes(r2);
+        setRobotAttributes(r3);
+        setRobotAttributes(r4);
 
-        r2.setAmmo(10);
-        r2.setDirection(Direction.RIGHT);
-        r2.setRange(3);
-        r2.setDamage(20);
-
-        r3.setAmmo(10);
-        r3.setDirection(Direction.LEFT);
-        r3.setRange(3);
-        r3.setDamage(20);
-
-        r4.setAmmo(10);
-        r4.setDirection(Direction.LEFT);
-        r4.setRange(3);
-        r4.setDamage(20);
-
-        // Add robots to players
         p1.addRobot(r1);
         p1.addRobot(r2);
         p2.addRobot(r3);
         p2.addRobot(r4);
 
-        // Place robots on map
         map[r1.getRow()][r1.getCol()].setEntity(r1);
         map[r2.getRow()][r2.getCol()].setEntity(r2);
         map[r3.getRow()][r3.getCol()].setEntity(r3);
         map[r4.getRow()][r4.getCol()].setEntity(r4);
 
+        printRobotPosition(r1);
+        printRobotPosition(r2);
+        printRobotPosition(r3);
+        printRobotPosition(r4);
+        System.out.println("Player1 robots: " + p1.getRobots().size());
+        System.out.println("Player2 robots: " + p2.getRobots().size());
+
         players.add(p1);
         players.add(p2);
 
-        System.out.println("Game initialized with mode: " + gameMode);
+        System.out.println("Game initialized with mode: " + battleMode);
     }
 
-    private void renderMap() {
-        mapGrid.getChildren().clear();
+    private void setRobotAttributes(Robot robot) {
+        robot.setAmmo(10);
+        robot.setRange(3);
+        robot.setDamage(20);
+        robot.setBarrelLength(20);
+        robot.setHealth(100);
+    }
 
-        for (int r = 0; r < mapHeight; r++) {
-            for (int c = 0; c < mapWidth; c++) {
-                Rectangle base = new Rectangle(30, 30, Color.LIGHTGRAY);
-                base.setStroke(Color.BLACK);
-                mapGrid.add(base, c, r);
-
-                Entity entity = map[r][c].getEntity();
-                if (entity instanceof Obstacle) {
-                    mapGrid.add(((Obstacle) entity).getView(), c, r);
-                } else if (entity instanceof Robot) {
-                    Circle robotView = new Circle(12, ((Robot) entity).getColor());
-                    mapGrid.add(robotView, c, r);
+    private void initAIPlayers() {
+        aiPlayers.clear();
+        boolean isAIvsAI = (battleMode == BattleMode.AI_VS_AI);
+        for (Player p : players) {
+            if (p.isAI()) {
+                for (Robot r : p.getRobots()) {
+                    AIPlayer ai = new AIPlayer(r, AIPlayer.AILevel.MEDIUM, isAIvsAI, r.getName());
+                    aiPlayers.add(ai);
                 }
             }
         }
+        System.out.println("AI Players initialized: " + aiPlayers.size());
+    }
 
-        if (bullet != null) {
-            mapGrid.add(bullet, currentCol, currentRow);
+    public void handleKeyPressed(String key) {
+        if (shotFired || !isPlayerTurnActive) {
+            System.out.println("Key ignored: shotFired=" + shotFired + ", isPlayerTurnActive=" + isPlayerTurnActive);
+            return;
+        }
+        Robot selectedRobot = getSelectedRobot();
+        if (selectedRobot == null) {
+            System.out.println("Key ignored: No selected robot");
+            return;
+        }
+        Player robotOwner = null;
+        for (Player p : players) {
+            if (p.getRobots().contains(selectedRobot)) {
+                robotOwner = p;
+                break;
+            }
+        }
+        if (robotOwner == null || robotOwner.isAI()) {
+            System.out.println("Key ignored: Robot owner is AI or not found");
+            return;
+        }
+        System.out.println("Key pressed: " + key + " for robot: " + selectedRobot.getName());
+        boolean isRedRobot = selectedRobot.getName().equals("R1") || selectedRobot.getName().equals("R2");
+        if (isRedRobot) {
+            switch (key.toUpperCase()) {
+                case "W" -> {
+                    moveSelectedRobot(0, -1, Direction.UP);
+                    // Removed nextTurn() to allow unlimited moves until shoot
+                }
+                case "S" -> {
+                    moveSelectedRobot(0, 1, Direction.DOWN);
+                    // Removed nextTurn() to allow unlimited moves until shoot
+                }
+                case "A" -> {
+                    moveSelectedRobot(-1, 0, Direction.LEFT);
+                    // Removed nextTurn() to allow unlimited moves until shoot
+                }
+                case "D" -> {
+                    moveSelectedRobot(1, 0, Direction.RIGHT);
+                    // Removed nextTurn() to allow unlimited moves until shoot
+                }
+                case "C", "SPACE" -> {
+                    shootSelectedRobot();
+                    // Keep nextTurn() here
+                }
+                case "R" -> {
+                    reloadSelectedRobot();
+                    // Removed nextTurn() assuming reload doesn't end turn
+                }
+                default -> System.out.println("Unhandled key for red robot: " + key);
+            }
+        } else {
+            switch (key.toUpperCase()) {
+                case "W", "UP" -> {
+                    moveSelectedRobot(0, -1, Direction.UP);
+                    // Removed nextTurn() to allow unlimited moves until shoot
+                }
+                case "A", "LEFT" -> {
+                    moveSelectedRobot(-1, 0, Direction.LEFT);
+                    // Removed nextTurn() to allow unlimited moves until shoot
+                }
+                case "S", "DOWN" -> {
+                    moveSelectedRobot(0, 1, Direction.DOWN);
+                    // Removed nextTurn() to allow unlimited moves until shoot
+                }
+                case "D", "RIGHT" -> {
+                    moveSelectedRobot(1, 0, Direction.RIGHT);
+                    // Removed nextTurn() to allow unlimited moves until shoot
+                }
+                case "C", "SPACE" -> {
+                    shootSelectedRobot();
+                    // Keep nextTurn() here
+                }
+                case "R" -> {
+                    reloadSelectedRobot();
+                    // Removed nextTurn() assuming reload doesn't end turn
+                }
+                default -> System.out.println("Unhandled key for blue robot: " + key);
+            }
+        }
+        updateUI();
+    }
+
+    private void moveSelectedRobot(int dx, int dy, Direction direction) {
+        Robot robot = getSelectedRobot();
+        if (robot == null || robot.getHealth() <= 0) {
+            System.out.println("Cannot move: Robot is null or dead");
+            return;
+        }
+        int newRow = robot.getRow() + dy;
+        int newCol = robot.getCol() + dx;
+        if (isInBounds(newRow, newCol) && map[newRow][newCol].isEmpty()) {
+            map[robot.getRow()][robot.getCol()].removeEntity();
+            robot.setPosition(newRow, newCol);
+            robot.setDirection(direction);
+            map[newRow][newCol].setEntity(robot);
+            printRobotPosition(robot);
+        } else {
+            System.out.println("Movement blocked for " + robot.getName() + " at (" + newRow + "," + newCol + ")");
+            handleCollision(robot, newRow, newCol);
         }
     }
 
-    private Robot getCurrentRobot() {
-        Player currentPlayer = players.get(currentPlayerIndex);
-        return currentPlayer.getRobots().get(currentRobotIndex);
+    private void shootSelectedRobot() {
+        Robot robot = getSelectedRobot();
+        if (robot == null || robot.getHealth() <= 0) {
+            System.out.println("Cannot shoot: Robot is null or dead");
+            return;
+        }
+        setCurrentRobotForShooting(robot);
+        shoot();
+        if (!players.get(manuallySelectedPlayerIndex).isAI()) {
+            nextTurn();
+        }
+    }
+
+    private void setCurrentRobotForShooting(Robot robot) {
+        for (int pIndex = 0; pIndex < players.size(); pIndex++) {
+            Player p = players.get(pIndex);
+            for (int rIndex = 0; rIndex < p.getRobots().size(); rIndex++) {
+                if (p.getRobots().get(rIndex) == robot) {
+                    currentPlayerIndex = pIndex;
+                    currentRobotIndex = rIndex;
+                    return;
+                }
+            }
+        }
+    }
+
+    private void reloadSelectedRobot() {
+        Robot robot = getSelectedRobot();
+        if (robot == null || robot.getHealth() <= 0) {
+            System.out.println("Cannot reload: Robot is null or dead");
+            return;
+        }
+        robot.setAmmo(10);
+        robot.resetDamage();
+        System.out.println("ربات " + robot.getName() + ": مهمات پر شد");
+        updateUI();
+    }
+
+    public void handleCollision(Robot robot, int newRow, int newCol) {
+        for (Player p : players) {
+            for (Robot r : p.getRobots()) {
+                if (r != robot && r.getRow() == newRow && r.getCol() == newCol) {
+                    System.out.println("ربات " + robot.getName() + " با ربات " + r.getName() + " برخورد کرد!");
+                    return;
+                }
+            }
+        }
+        if (isInBounds(newRow, newCol) && map[newRow][newCol].getEntity() instanceof Obstacle) {
+            Obstacle obstacle = (Obstacle) map[newRow][newCol].getEntity();
+            System.out.println("ربات " + robot.getName() + " با مانع " + obstacle.getName() + " برخورد کرد!");
+            obstacle.applyEffect(robot);
+            updateUI();
+        }
+    }
+
+    public Robot getCurrentRobot() {
+        if (players.isEmpty() || currentPlayerIndex >= players.size() ||
+                players.get(currentPlayerIndex).getRobots().isEmpty() ||
+                currentRobotIndex >= players.get(currentPlayerIndex).getRobots().size()) {
+            System.out.println("No current robot: players=" + players.size() + ", currentPlayerIndex=" + currentPlayerIndex + ", currentRobotIndex=" + currentRobotIndex);
+            return null;
+        }
+        Robot robot = players.get(currentPlayerIndex).getRobots().get(currentRobotIndex);
+        System.out.println("Current robot: " + robot.getName());
+        return robot;
+    }
+
+    private boolean isInBounds(int row, int col) {
+        return row >= 0 && row < mapHeight && col >= 0 && col < mapWidth;
     }
 
     private void nextTurn() {
         shotFired = false;
-        globalRobotTurnIndex++;
-
-        int totalRobots = 0;
-        for (Player p : players) totalRobots += p.getRobots().size();
-
-        for (int i = 0; i < totalRobots; i++) {
-            int idx = globalRobotTurnIndex % totalRobots;
-
-            int count = 0;
-            boolean found = false;
-            for (int pIndex = 0; pIndex < players.size(); pIndex++) {
-                Player p = players.get(pIndex);
-                int size = p.getRobots().size();
-                if (idx < count + size) {
-                    currentPlayerIndex = pIndex;
-                    currentRobotIndex = idx - count;
-                    if (getCurrentRobot().getHealth() > 0) {
-                        found = true;
-                        break;
-                    }
-                }
-                count += size;
-            }
-
-            if (found) break;
-
-            globalRobotTurnIndex++;
-        }
-
-        startTurnForCurrentRobot();
-    }
-
-    private void startTurnForCurrentRobot() {
-        updateUI();
-        renderMap();
-
-        Player currentPlayer = players.get(currentPlayerIndex);
+        globalTurnIndex++;
+        int[] nextIndices = turnOrder.get(globalTurnIndex % turnOrder.size());
+        currentPlayerIndex = nextIndices[0];
+        currentRobotIndex = nextIndices[1];
         Robot robot = getCurrentRobot();
-
-        if (robot.getHealth() <= 0) {
-            System.out.println("ربات " + robot.getName() + " مرده، نوبت بعدی");
+        if (robot == null || robot.getHealth() <= 0) {
+            System.out.println("Skipping turn: Robot is null or dead");
             nextTurn();
             return;
         }
+        checkGameEnd();
+        startTurnForCurrentRobot();
+        updateUI();
+    }
 
-        if (currentPlayer.isAI()) {
+    private void startTurnForCurrentRobot() {
+        Robot robot = getCurrentRobot();
+        if (robot == null || robot.getHealth() <= 0) {
+            System.out.println("ربات " + (robot != null ? robot.getName() : "نامشخص") + " نابود شده، نوبت بعدی");
+            nextTurn();
+            return;
+        }
+        System.out.println("Starting turn for robot: " + robot.getName() + ", Player: " + players.get(currentPlayerIndex).getName());
+        if (players.get(currentPlayerIndex).isAI()) {
             isPlayerTurnActive = false;
-            // اجرای تاخیر برای نوبت هوش مصنوعی
-            Timeline delay = new Timeline(new KeyFrame(Duration.millis(800), e -> performAITurn()));
-            delay.play();
+            System.out.println("AI turn for " + robot.getName() + ", isPlayerTurnActive=false");
+            performAITurn();
         } else {
             isPlayerTurnActive = true;
-            mapGrid.requestFocus();
+            System.out.println("Player turn started for " + robot.getName() + ", isPlayerTurnActive=true");
         }
+        updateUI();
     }
 
     private void performAITurn() {
         Robot currentRobot = getCurrentRobot();
+        if (currentRobot == null) {
+            System.out.println("خطا: ربات فعلی پیدا نشد!");
+            nextTurn();
+            return;
+        }
         AIPlayer aiPlayer = findAIPlayerByName(currentRobot.getName());
         if (aiPlayer == null) {
             System.out.println("AIPlayer برای " + currentRobot.getName() + " پیدا نشد!");
             nextTurn();
             return;
         }
-
         GameState gameState = buildGameStateFromCurrent();
         AIPlayer.AIAction action = aiPlayer.makeDecision(gameState);
-
         System.out.println("AI تصمیم " + currentRobot.getName() + ": " + action.getType());
-
         switch (action.getType()) {
             case MOVE -> {
                 Point p = (Point) action.getTarget();
                 int dx = p.x - currentRobot.getCol();
                 int dy = p.y - currentRobot.getRow();
-
                 Direction dir = calculateDirection(dx, dy);
                 moveRobotAI(dx, dy, dir);
+                nextTurn();
             }
             case ATTACK -> {
-                AIPlayer targetAI = (AIPlayer) action.getTarget();
-                Robot targetRobot = findRobotByName(targetAI.getName());
-                if (targetRobot != null) {
+                Point targetPoint = (Point) action.getTarget();
+                if (targetPoint != null) {
                     Direction dir = calculateDirection(
-                            targetRobot.getCol() - currentRobot.getCol(),
-                            targetRobot.getRow() - currentRobot.getRow()
+                            targetPoint.x - currentRobot.getCol(),
+                            targetPoint.y - currentRobot.getRow()
                     );
                     currentRobot.setDirection(dir);
                     shoot();
+                    nextTurn();
                 } else {
+                    System.out.println("هدف برای ربات " + currentRobot.getName() + " پیدا نشد");
                     nextTurn();
                 }
             }
-            case WAIT -> nextTurn();
+            case WAIT -> {
+                System.out.println("ربات " + currentRobot.getName() + ": منتظر ماند");
+                nextTurn();
+            }
         }
+        updateUI();
     }
 
     private void moveRobotAI(int dx, int dy, Direction direction) {
         Robot robot = getCurrentRobot();
+        if (robot == null) return;
         int newRow = robot.getRow() + dy;
         int newCol = robot.getCol() + dx;
-
         if (isInBounds(newRow, newCol) && map[newRow][newCol].isEmpty()) {
             map[robot.getRow()][robot.getCol()].removeEntity();
             robot.setPosition(newRow, newCol);
             robot.setDirection(direction);
             map[newRow][newCol].setEntity(robot);
-
-            AIPlayer ai = findAIPlayerByName(robot.getName());
-            if (ai != null) {
-                ai.moveToPosition(new Point(newCol, newRow));
-            }
-
-            updateUI();
-            renderMap();
-
-            Timeline delayTimeline = new Timeline(new KeyFrame(Duration.millis(500), e -> nextTurn()));
-            delayTimeline.play();
+            printRobotPosition(robot);
         } else {
-            nextTurn();
+            System.out.println("ربات " + robot.getName() + ": حرکت غیرمجاز");
         }
+        updateUI();
     }
 
     private AIPlayer findAIPlayerByName(String name) {
@@ -395,6 +889,7 @@ public class GameController {
 
     private GameState buildGameStateFromCurrent() {
         List<AIPlayer> currentAIPlayers = new ArrayList<>();
+        boolean isAIvsAI = (battleMode == BattleMode.AI_VS_AI);
         for (Player p : players) {
             if (p.isAI()) {
                 for (Robot r : p.getRobots()) {
@@ -402,7 +897,7 @@ public class GameController {
                     if (ai != null) {
                         currentAIPlayers.add(ai);
                     } else {
-                        currentAIPlayers.add(new AIPlayer(r, AIPlayer.AILevel.MEDIUM));
+                        currentAIPlayers.add(new AIPlayer(r, AIPlayer.AILevel.MEDIUM, isAIvsAI, r.getName()));
                     }
                 }
             }
@@ -410,236 +905,267 @@ public class GameController {
         return GameState.fromCurrentState(currentAIPlayers, map, mapWidth, mapHeight);
     }
 
-    private void updateUI() {
-        // Check if players list is empty (before initialization)
-        if (players.isEmpty()) {
+    private void shoot() {
+        if (shotFired || !isPlayerTurnActive) {
+            System.out.println("Shoot ignored: shotFired=" + shotFired + ", isPlayerTurnActive=" + isPlayerTurnActive);
             return;
         }
-
-        Robot robot = getCurrentRobot();
-        boolean alive = robot.getHealth() > 0;
-        boolean enableControls = alive && !shotFired && isPlayerTurnActive;
-
-        moveUpButton.setDisable(!enableControls);
-        moveDownButton.setDisable(!enableControls);
-        moveLeftButton.setDisable(!enableControls);
-        moveRightButton.setDisable(!enableControls);
-        shootButton.setDisable(!enableControls);
-
-        int ammo = robot.getAmmo();
-        ammoLabel.setText("Ammo: " + (ammo == Integer.MAX_VALUE ? "∞" : ammo));
-        // Show current damage in the UI
-        activeAmmoLabel.setText("Active: " + robot.getName() + " (" + robot.getDirection() + ") - Damage: " + robot.getCurrentDamage());
-
-        if (players.get(0).getRobots().size() >= 2) {
-            health1.setProgress(players.get(0).getRobots().get(0).getHealth() / 100.0);
-            health2.setProgress(players.get(0).getRobots().get(1).getHealth() / 100.0);
-        }
-        if (players.get(1).getRobots().size() >= 2) {
-            health3.setProgress(players.get(1).getRobots().get(0).getHealth() / 100.0);
-            health4.setProgress(players.get(1).getRobots().get(1).getHealth() / 100.0);
-        }
-    }
-
-    @FXML private void moveUp() { if (!shotFired) moveRobot(0, -1, Direction.UP); }
-    @FXML private void moveDown() { if (!shotFired) moveRobot(0, 1, Direction.DOWN); }
-    @FXML private void moveLeft() { if (!shotFired) moveRobot(-1, 0, Direction.LEFT); }
-    @FXML private void moveRight() { if (!shotFired) moveRobot(1, 0, Direction.RIGHT); }
-
-    private void moveRobot(int dx, int dy, Direction direction) {
-        if (shotFired) return;
-        if (!isPlayerTurnActive) return;
-
-        Robot robot = getCurrentRobot();
-        int newRow = robot.getRow() + dy;
-        int newCol = robot.getCol() + dx;
-
-        if (isInBounds(newRow, newCol) && map[newRow][newCol].isEmpty()) {
-            map[robot.getRow()][robot.getCol()].removeEntity();
-            robot.setPosition(newRow, newCol);
-            robot.setDirection(direction);
-            map[newRow][newCol].setEntity(robot);
-
-            updateUI();
-            renderMap();
-        } else {
-            System.out.println("حرکت غیرمجاز یا مکان اشغال شده.");
-        }
-    }
-
-    @FXML
-    private void shoot() {
-        if (shotFired) return;
-        if (!isPlayerTurnActive) return;
-
         Robot shooter = getCurrentRobot();
+        if (shooter == null) {
+            System.out.println("Shoot failed: No current robot");
+            shotFired = false;
+            isPlayerTurnActive = false;
+            nextTurn();
+            return;
+        }
         System.out.println("شلیک توسط " + shooter.getName() + " - جهت: " + shooter.getDirection() + " - قدرت آسیب: " + shooter.getCurrentDamage());
-
         if (shooter.getAmmo() == 0) {
             System.out.println("مهمات تمام است!");
+            shotFired = false;
+            isPlayerTurnActive = false;
+            nextTurn();
             return;
         } else if (shooter.getAmmo() != Integer.MAX_VALUE) {
-            shooter.setAmmo(shooter.getAmmo() - 1);
+            shooter.decreaseAmmo();
         }
-
-        currentRow = shooter.getRow();
-        currentCol = shooter.getCol();
-        int dRow = 0, dCol = 0;
-
+        int bulletRow = shooter.getRow();
+        int bulletCol = shooter.getCol();
+        final int dRow, dCol;
         if (shooter.getDirection() == null) {
             System.out.println("⚠️ جهت ربات تنظیم نشده است! جهت پیش‌فرض: RIGHT");
             shooter.setDirection(Direction.RIGHT);
+            System.out.println("⚠️ جهت ربات " + shooter.getName() + " تنظیم شد: RIGHT");
         }
-
         switch (shooter.getDirection()) {
-            case UP -> dRow = -1;
-            case DOWN -> dRow = 1;
-            case LEFT -> dCol = -1;
-            case RIGHT -> dCol = 1;
+            case UP -> { dRow = -1; dCol = 0; }
+            case DOWN -> { dRow = 1; dCol = 0; }
+            case LEFT -> { dRow = 0; dCol = -1; }
+            case RIGHT -> { dRow = 0; dCol = 1; }
+            default -> { dRow = 0; dCol = 1; }
         }
-
-        bullet = new Circle(5, Color.BLACK);
-        mapGrid.add(bullet, currentCol, currentRow);
-
         shotFired = true;
-        updateUI();
-
-        Timeline timeline = new Timeline();
-        final int finalDRow = dRow;
-        final int finalDCol = dCol;
-
-        final int maxRange = shooter.getRange();
-        final int[] steps = {0};
-
-        KeyFrame keyFrame = new KeyFrame(Duration.millis(100), e -> {
-            currentRow += finalDRow;
-            currentCol += finalDCol;
-            steps[0]++;
-
-            System.out.println("موقعیت تیر: (" + currentRow + ", " + currentCol + ")");
-
-            if (!isInBounds(currentRow, currentCol) || steps[0] > maxRange) {
-                timeline.stop();
-                mapGrid.getChildren().remove(bullet);
-                bullet = null;
-                isPlayerTurnActive = false;
-                nextTurn();
-                return;
+        int steps = 0;
+        int maxRange = shooter.getRange();
+        Timeline bulletAnimation = new Timeline();
+        Platform.runLater(this::updateMapGrid);
+        while (steps <= maxRange && isInBounds(bulletRow, bulletCol)) {
+            bulletRow += dRow;
+            bulletCol += dCol;
+            steps++;
+            int finalBulletRow = bulletRow;
+            int finalBulletCol = bulletCol;
+            System.out.println("موقعیت تیر: (" + finalBulletRow + ", " + finalBulletCol + ")");
+            if (!isInBounds(finalBulletRow, finalBulletCol) || steps > maxRange) {
+                bulletAnimation.getKeyFrames().add(
+                        new KeyFrame(Duration.millis(300 * steps), e -> {
+                            shotFired = false;
+                            isPlayerTurnActive = false;
+                            System.out.println("شلیک ربات " + shooter.getName() + " پایان یافت");
+                            updateUI();
+                            nextTurn();
+                        })
+                );
+                break;
             }
-
-            Cell target = map[currentRow][currentCol];
+            Cell target = map[finalBulletRow][finalBulletCol];
             Entity entity = target.getEntity();
-
-            if (entity instanceof Obstacle) {
-                ((Obstacle) entity).applyEffect(shooter);
-                timeline.stop();
-                mapGrid.getChildren().remove(bullet);
-                bullet = null;
-                isPlayerTurnActive = false;
-                nextTurn();
-                return;
+            bulletAnimation.getKeyFrames().add(
+                    new KeyFrame(Duration.millis(300 * steps), e -> {
+                        Rectangle bullet = new Rectangle(20, 20, Color.YELLOW);
+                        mapGrid.add(bullet, finalBulletCol, finalBulletRow);
+                        new Timeline(new KeyFrame(Duration.millis(250), ev -> mapGrid.getChildren().remove(bullet))).play();
+                    })
+            );
+            if (entity instanceof Obstacle obstacle) {
+                bulletAnimation.getKeyFrames().add(
+                        new KeyFrame(Duration.millis(300 * steps), e -> {
+                            obstacle.applyEffect(shooter);
+                            if (obstacle instanceof SteelWall steelWall && steelWall.isDestroyed() ||
+                                    obstacle instanceof WoodenWall woodenWall && woodenWall.isDestroyed()) {
+                                target.removeEntity();
+                                System.out.println(obstacle.getName() + " at (" + finalBulletRow + ", " + finalBulletCol + ") removed from map");
+                            }
+                            shotFired = false;
+                            isPlayerTurnActive = false;
+                            System.out.println("شلیک ربات " + shooter.getName() + " به مانع " + obstacle.getName() + " برخورد کرد");
+                            updateUI();
+                            nextTurn();
+                        })
+                );
+                break;
             }
-
-            if (entity instanceof Robot) {
-                Robot hit = (Robot) entity;
-                Robot currentShooter = getCurrentRobot();
-
-                // Calculate current damage (decreases by 5% with each shot fired)
-                int currentDamage = currentShooter.getCurrentDamage();
-
-                hit.takeDamage(currentDamage);
-                System.out.println("💥 " + currentShooter.getName() + " hit " + hit.getName() + " for " + currentDamage + " damage!");
-
-                // Reduce shooter's damage by 5% for next shot
-                currentShooter.reduceDamageBy5Percent();
-                System.out.println("🔽 " + currentShooter.getName() + "'s damage reduced to " + currentShooter.getCurrentDamage());
-
-                AIPlayer ai = findAIPlayerByName(hit.getName());
-                if (ai != null) {
-                    ai.takeDamage(currentDamage);
-                }
-                if (hit.getHealth() <= 0) {
-                    target.removeEntity();
-                    System.out.println("💀 ربات " + hit.getName() + " نابود شد!");
-
-                    for (Player p : players) {
-                        p.getRobots().removeIf(r -> r.getName().equals(hit.getName()));
-                    }
-                }
-                timeline.stop();
-                mapGrid.getChildren().remove(bullet);
-                bullet = null;
-                isPlayerTurnActive = false;
-                nextTurn();
-                return;
+            if (entity instanceof Robot hit) {
+                bulletAnimation.getKeyFrames().add(
+                        new KeyFrame(Duration.millis(300 * steps), e -> {
+                            int currentDamage = shooter.getCurrentDamage();
+                            hit.takeDamage(currentDamage);
+                            System.out.println("💥 " + shooter.getName() + " hit " + hit.getName() + " for " + currentDamage + " damage!");
+                            shooter.reduceDamageBy5Percent();
+                            System.out.println("🔽 " + shooter.getName() + "'s damage reduced to " + shooter.getCurrentDamage());
+                            AIPlayer ai = findAIPlayerByName(hit.getName());
+                            if (ai != null) {
+                                ai.takeDamage(currentDamage);
+                            }
+                            if (hit.getHealth() <= 0) {
+                                target.removeEntity();
+                                System.out.println("💀 ربات " + hit.getName() + " نابود شد!");
+                                for (Player p : players) {
+                                    p.getRobots().removeIf(r -> r.getName().equals(hit.getName()));
+                                }
+                            }
+                            shotFired = false;
+                            isPlayerTurnActive = false;
+                            updateUI();
+                            nextTurn();
+                        })
+                );
+                break;
             }
-
-            mapGrid.getChildren().remove(bullet);
-            mapGrid.add(bullet, currentCol, currentRow);
-            updateUI();
-        });
-
-        timeline.getKeyFrames().add(keyFrame);
-        timeline.setCycleCount(Timeline.INDEFINITE);
-        timeline.play();
-        shootingTimeline = timeline;
+        }
+        bulletAnimation.play();
     }
 
-    private boolean isInBounds(int r, int c) {
-        return r >= 0 && r < mapHeight && c >= 0 && c < mapWidth;
-    }
+    private void checkGameEnd() {
+        Player winner = null;
+        boolean player1HasRobots = false;
+        boolean player2HasRobots = false;
 
-    @FXML
-    private void selectRobot1() {
-        selectRobot(0, 0);
-    }
-
-    @FXML
-    private void selectRobot2() {
-        selectRobot(0, 1);
-    }
-
-    @FXML
-    private void selectRobot3() {
-        selectRobot(1, 0);
-    }
-
-    @FXML
-    private void selectRobot4() {
-        selectRobot(1, 1);
-    }
-
-    private void selectRobot(int playerIndex, int robotIndex) {
-        if (playerIndex < players.size()) {
-            Player p = players.get(playerIndex);
-            if (robotIndex < p.getRobots().size()) {
-                currentPlayerIndex = playerIndex;
-                currentRobotIndex = robotIndex;
-
-                Robot r = getCurrentRobot();
-                if (r.getHealth() <= 0) {
-                    System.out.println("این ربات مرده است.");
-                    return;
-                }
-                isPlayerTurnActive = true;
-                shotFired = false;
-                updateUI();
-                renderMap();
-                mapGrid.requestFocus();
-
-                System.out.println("ربات انتخاب شد: " + r.getName());
+        for (Robot r : players.get(0).getRobots()) {
+            if (r.isAlive()) {
+                player1HasRobots = true;
+                break;
             }
+        }
+        for (Robot r : players.get(1).getRobots()) {
+            if (r.isAlive()) {
+                player2HasRobots = true;
+                break;
+            }
+        }
+
+        if (!player1HasRobots && !player2HasRobots) {
+            endGame("All robots are destroyed! It's a draw!");
+        } else if (!player1HasRobots) {
+            winner = players.get(1);
+            endGame(winner.getName() + " (Blue Team) wins!");
+        } else if (!player2HasRobots) {
+            winner = players.get(0);
+            endGame(winner.getName() + " (Red Team) wins!");
         }
     }
 
-    @FXML private void reload() { reloadAmmo(); }
-    @FXML private void exitGame() { Platform.exit(); }
+    private void endGame(String message) {
+        System.out.println("Game Over: " + message);
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Game Over");
+            alert.setHeaderText(null);
+            alert.setContentText(message);
+            alert.showAndWait();
+            Stage stage = (Stage) mapGrid.getScene().getWindow();
+            stage.close();
+        });
+    }
 
-    // Added the missing method that your FXML is looking for
-    @FXML
-    private void exitToMainMenu() {
-        // For now, this just exits the game like exitGame()
-        // Later you can implement proper main menu navigation here
+    public void exitGame() {
+        System.out.println("Exiting the Game");
         Platform.exit();
     }
+
+    private void updateUI() {
+        Platform.runLater(() -> {
+            updateHealthBars();
+            Robot selectedRobot = getSelectedRobot();
+            if (selectedRobot != null) {
+                ammoLabel.setText("Ammo: " + selectedRobot.getAmmo());
+            } else {
+                ammoLabel.setText("Ammo: 0");
+            }
+            updateMapGrid();
+            updateDebugMatrix();
+        });
+    }
+
+    private void updateHealthBars() {
+        Robot r1 = findRobotByName("R1");
+        Robot r2 = findRobotByName("R2");
+        Robot r3 = findRobotByName("R3");
+        Robot r4 = findRobotByName("R4");
+
+        health1.setProgress(r1 != null && r1.isAlive() ? r1.getHealth() / 100.0 : 0.0);
+        health2.setProgress(r2 != null && r2.isAlive() ? r2.getHealth() / 100.0 : 0.0);
+        health3.setProgress(r3 != null && r3.isAlive() ? r3.getHealth() / 100.0 : 0.0);
+        health4.setProgress(r4 != null && r4.isAlive() ? r4.getHealth() / 100.0 : 0.0);
+    }
+
+    private void updateMapGrid() {
+        mapGrid.getChildren().clear();
+        for (int r = 0; r < mapHeight; r++) {
+            for (int c = 0; c < mapWidth; c++) {
+                Rectangle cell = new Rectangle(30, 30);
+                Entity entity = map[r][c].getEntity();
+                if (entity instanceof Robot robot) {
+                    if (robot.getName().equals("R1") || robot.getName().equals("R2")) {
+                        cell.setFill(Color.RED);
+                    } else if (robot.getName().equals("R3") || robot.getName().equals("R4")) {
+                        cell.setFill(Color.BLUE);
+                    } else {
+                        System.out.println("Warning: Unknown robot name " + robot.getName());
+                        cell.setFill(Color.GRAY);
+                    }
+                } else if (entity instanceof NormalWall) {
+                    cell.setFill(Color.GRAY);
+                } else if (entity instanceof SteelWall) {
+                    cell.setFill(Color.DARKGRAY);
+                } else if (entity instanceof WoodenWall) {
+                    cell.setFill(Color.BROWN);
+                } else if (entity instanceof StandardMine) {
+                    cell.setFill(Color.BLACK);
+                } else {
+                    cell.setFill(Color.LIGHTGRAY);
+                }
+                mapGrid.add(cell, c, r);
+            }
+        }
+    }
+
+    private void updateDebugMatrix() {
+        if (debugTextArea == null) {
+            return;
+        }
+        StringBuilder matrixStr = new StringBuilder();
+        matrixStr.append("Map Matrix (Rows: ").append(mapHeight).append(", Cols: ").append(mapWidth).append("):\n");
+        for (int r = 0; r < mapHeight; r++) {
+            for (int c = 0; c < mapWidth; c++) {
+                Entity entity = map[r][c].getEntity();
+                char symbol;
+                if (entity instanceof Robot robot) {
+                    if (robot.getName().startsWith("R1") || robot.getName().startsWith("R2")) {
+                        symbol = 'R';
+                    } else {
+                        symbol = 'B';
+                    }
+                } else if (entity instanceof NormalWall) {
+                    symbol = 'N';
+                } else if (entity instanceof SteelWall) {
+                    symbol = 'S';
+                } else if (entity instanceof WoodenWall) {
+                    symbol = 'W';
+                } else if (entity instanceof StandardMine) {
+                    symbol = 'M';
+                } else {
+                    symbol = '.';
+                }
+                matrixStr.append(symbol).append(" ");
+            }
+            matrixStr.append("\n");
+        }
+        debugTextArea.setText(matrixStr.toString());
+    }
+
+    private void printRobotPosition(Robot robot) {
+        String color = robot.getColor().equals("Red") ? "قرمز" : "آبی";
+        System.out.println("ربات " + color + "(" + robot.getRow() + "," + robot.getCol() + ")");
+    }
 }
+

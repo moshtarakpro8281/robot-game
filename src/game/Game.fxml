@@ -1,107 +1,120 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 
-<BorderPane xmlns="http://javafx.com/javafx/24.0.0"
-            xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="game.GameController">
+<BorderPane xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="game.GameController">
 
+    <!-- نوار بالایی -->
     <top>
-        <VBox fx:id="topVBox" alignment="CENTER" spacing="15" style="-fx-padding:15;">
-            <HBox fx:id="ammoHBox" alignment="CENTER_LEFT" spacing="20">
-                <Label fx:id="ammoLabel" text="Ammo: 0" />
-                <Label fx:id="activeAmmoLabel" text="" />
+        <VBox fx:id="topVBox" alignment="CENTER" spacing="10" style="-fx-padding: 10;">
+            <HBox fx:id="ammoHBox" alignment="TOP_LEFT" prefHeight="20.0" prefWidth="474.0" spacing="10">
+                <Label fx:id="ammoLabel" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: black;" text="Ammo: 0" />
+                <Label fx:id="activeAmmoLabel" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: red;" text="" />
             </HBox>
-            <VBox fx:id="healthVBox" alignment="CENTER" spacing="10">
-                <HBox alignment="CENTER_LEFT" spacing="10">
-                    <Label text="🤖 Robot 1 - Ammo: 10" />
-                    <ProgressBar fx:id="health1" progress="1.0" />
+            <VBox fx:id="healthVBox" alignment="CENTER" prefHeight="65.0" prefWidth="474.0" spacing="5">
+                <HBox fx:id="healthRow1" alignment="CENTER" spacing="5">
+                    <ProgressBar fx:id="health1" prefWidth="100" progress="1.0" style="-fx-background-color: transparent;" />
+                    <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Robot 1 - Ammo: 10" />
                 </HBox>
-                <HBox alignment="CENTER_LEFT" spacing="10">
-                    <Label text="🤖 Robot 2 - Ammo: 10" />
-                    <ProgressBar fx:id="health2" progress="1.0" />
+                <HBox fx:id="healthRow2" alignment="CENTER" spacing="5">
+                    <ProgressBar fx:id="health2" prefWidth="100" progress="1.0" style="-fx-background-color: transparent;" />
+                    <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Robot 2 - Ammo: 10" />
                 </HBox>
-                <HBox alignment="CENTER_LEFT" spacing="10">
-                    <Label text="🤖 Robot 3 - Ammo: 10" />
-                    <ProgressBar fx:id="health3" progress="1.0" />
+                <HBox fx:id="healthRow3" alignment="CENTER" spacing="5">
+                    <ProgressBar fx:id="health3" prefWidth="100" progress="1.0" style="-fx-background-color: transparent;" />
+                    <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Robot 3 - Ammo: 10" />
                 </HBox>
-                <HBox alignment="CENTER_LEFT" spacing="10">
-                    <Label text="🤖 Robot 4 - Ammo: 10" />
-                    <ProgressBar fx:id="health4" progress="1.0" />
+                <HBox fx:id="healthRow4" alignment="CENTER" spacing="5">
+                    <ProgressBar fx:id="health4" prefWidth="100" progress="1.0" style="-fx-background-color: transparent;" />
+                    <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text="Robot 4 - Ammo: 10" />
                 </HBox>
             </VBox>
-            <Label fx:id="movementStatusLabel" text="" />
         </VBox>
     </top>
 
+    <!-- مرکز: نقشه بازی -->
     <center>
-        <GridPane fx:id="mapGrid" alignment="CENTER" hgap="1" vgap="1"
-                  style="-fx-background-color: #9bbbd4; -fx-padding:5; -fx-border-color:#6a8ca0; -fx-border-width:2;"
-                  prefHeight="420" prefWidth="420">
+        <GridPane fx:id="mapGrid" alignment="CENTER" hgap="0" prefHeight="387.0" prefWidth="491.0" style="-fx-background-color: lightgray; -fx-padding: 0;" vgap="0" GridPane.halignment="CENTER">
+            <!-- تعریف ستون‌ها -->
             <columnConstraints>
-                <!-- 14 ستون با اندازه ثابت 30 -->
-                <ColumnConstraints minWidth="30" prefWidth="30" maxWidth="30"/>
-                <ColumnConstraints minWidth="30" prefWidth="30" maxWidth="30"/>
-                <ColumnConstraints minWidth="30" prefWidth="30" maxWidth="30"/>
-                <ColumnConstraints minWidth="30" prefWidth="30" maxWidth="30"/>
-                <ColumnConstraints minWidth="30" prefWidth="30" maxWidth="30"/>
-                <ColumnConstraints minWidth="30" prefWidth="30" maxWidth="30"/>
-                <ColumnConstraints minWidth="30" prefWidth="30" maxWidth="30"/>
-                <ColumnConstraints minWidth="30" prefWidth="30" maxWidth="30"/>
-                <ColumnConstraints minWidth="30" prefWidth="30" maxWidth="30"/>
-                <ColumnConstraints minWidth="30" prefWidth="30" maxWidth="30"/>
-                <ColumnConstraints minWidth="30" prefWidth="30" maxWidth="30"/>
-                <ColumnConstraints minWidth="30" prefWidth="30" maxWidth="30"/>
-                <ColumnConstraints minWidth="30" prefWidth="30" maxWidth="30"/>
-                <ColumnConstraints minWidth="30" prefWidth="30" maxWidth="30"/>
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="30" prefWidth="30" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="30" prefWidth="30" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="30" prefWidth="30" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="30" prefWidth="30" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="30" prefWidth="30" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="30" prefWidth="30" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="30" prefWidth="30" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="30" prefWidth="30" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="30" prefWidth="30" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="30" prefWidth="30" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="30" prefWidth="30" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="30" prefWidth="30" />
             </columnConstraints>
+
+            <!-- تعریف ردیف‌ها -->
             <rowConstraints>
-                <!-- 14 ردیف با اندازه ثابت 30 -->
-                <RowConstraints minHeight="30" prefHeight="30" maxHeight="30"/>
-                <RowConstraints minHeight="30" prefHeight="30" maxHeight="30"/>
-                <RowConstraints minHeight="30" prefHeight="30" maxHeight="30"/>
-                <RowConstraints minHeight="30" prefHeight="30" maxHeight="30"/>
-                <RowConstraints minHeight="30" prefHeight="30" maxHeight="30"/>
-                <RowConstraints minHeight="30" prefHeight="30" maxHeight="30"/>
-                <RowConstraints minHeight="30" prefHeight="30" maxHeight="30"/>
-                <RowConstraints minHeight="30" prefHeight="30" maxHeight="30"/>
-                <RowConstraints minHeight="30" prefHeight="30" maxHeight="30"/>
-                <RowConstraints minHeight="30" prefHeight="30" maxHeight="30"/>
-                <RowConstraints minHeight="30" prefHeight="30" maxHeight="30"/>
-                <RowConstraints minHeight="30" prefHeight="30" maxHeight="30"/>
-                <RowConstraints minHeight="30" prefHeight="30" maxHeight="30"/>
-                <RowConstraints minHeight="30" prefHeight="30" maxHeight="30"/>
+                <RowConstraints minHeight="30" prefHeight="30" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="30" prefHeight="30" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="30" prefHeight="30" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="30" prefHeight="30" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="30" prefHeight="30" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="30" prefHeight="30" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="30" prefHeight="30" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="30" prefHeight="30" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="30" prefHeight="30" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="30" prefHeight="30" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="30" prefHeight="30" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="30" prefHeight="30" vgrow="SOMETIMES" />
             </rowConstraints>
         </GridPane>
     </center>
 
+    <!-- پایین: دکمه‌های کنترل حرکت و عملیات -->
     <bottom>
-        <ScrollPane hbarPolicy="AS_NEEDED" vbarPolicy="NEVER" fitToHeight="true" style="-fx-padding:10;">
-            <HBox alignment="CENTER" spacing="10" style="-fx-background-color:#d0e6ff; -fx-border-color:#aaccee; -fx-border-width:2 0 0 0;" minHeight="60">
-                <Button fx:id="selectRobot1Button" onAction="#selectRobot1" text="🤖 Robot 1" style="-fx-font-weight:bold; -fx-text-fill:#1c7ed6; -fx-background-color:#e7f5ff;" prefWidth="90"/>
-                <Button fx:id="selectRobot2Button" onAction="#selectRobot2" text="🤖 Robot 2" style="-fx-font-weight:bold; -fx-text-fill:#1c7ed6; -fx-background-color:#e7f5ff;" prefWidth="90"/>
-                <Button fx:id="selectRobot3Button" onAction="#selectRobot3" text="🤖 Robot 3" style="-fx-font-weight:bold; -fx-text-fill:#1c7ed6; -fx-background-color:#e7f5ff;" prefWidth="90"/>
-                <Button fx:id="selectRobot4Button" onAction="#selectRobot4" text="🤖 Robot 4" style="-fx-font-weight:bold; -fx-text-fill:#1c7ed6; -fx-background-color:#e7f5ff;" prefWidth="90"/>
-
-                <Button fx:id="moveLeftButton" onAction="#moveLeft" text="←" style="-fx-font-weight:bold; -fx-background-color:#b0d1ff; -fx-text-fill:#0a3d62; -fx-font-size:18px;" prefWidth="50"/>
-                <VBox spacing="3">
-                    <Button fx:id="moveUpButton" onAction="#moveUp" text="↑" style="-fx-font-weight:bold; -fx-background-color:#b0d1ff; -fx-text-fill:#0a3d62; -fx-font-size:14px;" prefWidth="50"/>
-                    <Button fx:id="moveDownButton" onAction="#moveDown" text="↓" style="-fx-font-weight:bold; -fx-background-color:#b0d1ff; -fx-text-fill:#0a3d62; -fx-font-size:14px;" prefWidth="50"/>
-                </VBox>
-                <Button fx:id="moveRightButton" onAction="#moveRight" text="→" style="-fx-font-weight:bold; -fx-background-color:#b0d1ff; -fx-text-fill:#0a3d62; -fx-font-size:18px;" prefWidth="50"/>
-
-                <Button fx:id="shootButton" onAction="#shoot" text="💥 شلیک" style="-fx-font-weight:bold; -fx-background-color:#ff6b6b; -fx-text-fill:white; -fx-font-size:16px;" prefWidth="90"/>
-                <Button onAction="#exitToMainMenu" text="خروج از بازی" style="-fx-background-color:#fa5252; -fx-text-fill:white; -fx-font-weight:bold;" prefWidth="90"/>
-            </HBox>
-        </ScrollPane>
+        <AnchorPane prefHeight="82.0" prefWidth="419.0" style="-fx-padding: 10;">
+            <children>
+                <Button fx:id="selectRobot1Button" layoutX="215.0" layoutY="9.0" onAction="#selectRobot1" prefHeight="26.0" prefWidth="64.0" style="-fx-background-color: #a9a9a9;" text="Robot 1" textFill="#3e9c46" />
+                <Button fx:id="selectRobot2Button" layoutX="214.0" layoutY="38.0" onAction="#selectRobot2" prefHeight="26.0" prefWidth="63.0" style="-fx-background-color: #a9a9a9;" text="Robot 2" textFill="#3e9c46" />
+                <Button fx:id="selectRobot3Button" layoutX="215.0" layoutY="68.0" onAction="#selectRobot3" prefHeight="26.0" prefWidth="63.0" style="-fx-background-color: #a9a9a9;" text="Robot 3" textFill="#3e9c46" />
+                <Button fx:id="selectRobot4Button" layoutX="215.0" layoutY="98.0" onAction="#selectRobot4" prefHeight="23.0" prefWidth="63.0" style="-fx-background-color: #a9a9a9;" text="Robot 4" textFill="#3e9c46" />
+                <Button fx:id="moveLeftButton" layoutX="13.0" layoutY="36.0" mnemonicParsing="false" onAction="#moveRobotLeft" prefHeight="40.0" prefWidth="41.0" style="-fx-background-color: #d3d3d3;" text="←" textFill="#1e5cec">
+                    <font><Font name="System Bold" size="15.0" /></font>
+                </Button>
+                <Button fx:id="moveUpButton" layoutX="55.0" layoutY="29.0" mnemonicParsing="false" onAction="#moveRobotUp" prefHeight="22.0" prefWidth="75.0" style="-fx-background-color: #d3d3d3;" text="↑" textFill="#2356e4">
+                    <font><Font name="System Bold" size="8.0" /></font>
+                </Button>
+                <Button fx:id="moveDownButton" layoutX="55.0" layoutY="54.0" mnemonicParsing="false" onAction="#moveRobotDown" prefHeight="22.0" prefWidth="74.0" style="-fx-background-color: #d3d3d3;" text="↓" textFill="#1720d4">
+                    <font><Font name="System Bold" size="9.0" /></font>
+                </Button>
+                <Button fx:id="moveRightButton" layoutX="130.0" layoutY="33.0" mnemonicParsing="false" onAction="#moveRobotRight" prefHeight="41.0" prefWidth="43.0" style="-fx-background-color: #d3d3d3;" text="→" textFill="#2808e1">
+                    <font><Font name="System Bold" size="15.0" /></font>
+                </Button>
+                <Button fx:id="shootButton" layoutX="300.0" layoutY="40.0" onAction="#shoot" prefWidth="80" style="-fx-background-color: #ffcccc;" text="شلیک" textFill="#ff0000" wrapText="true">
+                    <font><Font name="System Bold" size="12.0" /></font>
+                </Button>
+                <Button layoutX="393.0" layoutY="40.0" onAction="#handleExit" prefWidth="80" style="-fx-background-color: #ff6347;" text="خروج" />
+            </children>
+        </AnchorPane>
     </bottom>
 
+    <!-- سمت راست: اسکرولر برای نمایش ماتریس مختصات عددی -->
+    <right>
+        <ScrollPane fx:id="debugScrollPane" fitToWidth="true" prefHeight="387.0" prefWidth="200.0">
+            <content>
+                <TextArea fx:id="debugTextArea" editable="false" prefHeight="386.0" prefWidth="185.0" style="-fx-font-family: monospace; -fx-font-size: 12px;" wrapText="true" />
+            </content>
+        </ScrollPane>
+    </right>
 </BorderPane>

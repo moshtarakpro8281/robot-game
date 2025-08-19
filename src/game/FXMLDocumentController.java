@@ -1,6 +1,5 @@
 package game;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 import javafx.event.ActionEvent;
@@ -17,144 +16,103 @@ import javafx.stage.Stage;
 public class FXMLDocumentController implements Initializable {
 
     @FXML
-    private Label label;
+    private Label label; // برای نمایش پیام
 
-    private String selectedGameType = "pvp";
+    private String selectedGameType = "pvp"; // نوع بازی پیش‌فرض
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        // مقداردهی اولیه
-        if (label != null) {
-            label.setText("نوع بازی: " + selectedGameType);
-        }
+        // مقداردهی اولیه (اگر لازم است)
+        label.setText("نوع بازی انتخاب شده: " + selectedGameType);
     }
 
+    // متد شروع بازی
     @FXML
     private void handleStartGame(ActionEvent event) {
-        // First open settings, then start game with selected mode
-        openSettingsAndStartGame();
-    }
-
-    private void openSettingsAndStartGame() {
         try {
-            // Load the settings dialog first
-            System.out.println("Loading Settings FXML: " + getClass().getResource("/game/Settings.fxml"));
-            FXMLLoader settingsLoader = new FXMLLoader(getClass().getResource("/game/Settings.fxml"));
-            Parent settingsRoot = settingsLoader.load();
+            // بارگذاری صفحه بازی
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/game/Game.fxml"));
+            Parent root = loader.load();
 
-            // Get the settings controller
-            SettingsController settingsController = settingsLoader.getController();
+            // گرفتن Stage فعلی
+            Stage stage = (Stage) label.getScene().getWindow();
 
-            // Create and show the settings dialog
-            Stage settingsStage = new Stage();
-            settingsStage.setTitle("تنظیمات بازی");
-            settingsStage.initModality(Modality.APPLICATION_MODAL);
-            settingsStage.setScene(new Scene(settingsRoot));
-            settingsStage.setResizable(false);
+            // تغییر Scene به صفحه بازی
+            Scene gameScene = new Scene(root);
+            stage.setScene(gameScene);
 
-            // Set the dialog stage in the controller
-            settingsController.setDialogStage(settingsStage);
-
-            // Show and wait for user input
-            settingsStage.showAndWait();
-
-            // Check if user confirmed their selection
-            if (settingsController.isConfirmed()) {
-                // Get the selected game type
-                selectedGameType = settingsController.getSelectedGameType();
-                System.out.println("Selected game type: " + selectedGameType);
-
-                // Update the label
-                if (label != null) {
-                    label.setText("نوع بازی انتخاب شده: " + selectedGameType);
-                }
-
-                // Start the game with the selected settings
-                startGameWithSettings(selectedGameType);
-            } else {
-                System.out.println("Settings canceled by user");
-                // User canceled, stay on main menu
-            }
-        } catch (IOException e) {
-            System.out.println("Error loading settings:");
-            e.printStackTrace();
-            Alert alert = new Alert(Alert.AlertType.ERROR, "خطا در لود تنظیمات: " + e.getMessage());
+            // بعد از تغییر Scene، پیام "شروع بازی" نمایش داده می‌شود
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("شروع بازی");
+            alert.setHeaderText(null);
+            alert.setContentText("شروع بازی انجام شد! نوع بازی: " + selectedGameType);
             alert.showAndWait();
-        }
-    }
-
-    private void startGameWithSettings(String gameMode) {
-        try {
-            System.out.println("Loading Game FXML: " + getClass().getResource("/game/Game.fxml"));
-            FXMLLoader gameLoader = new FXMLLoader(getClass().getResource("/game/Game.fxml"));
-            Parent gameRoot = gameLoader.load();
-
-            // Get the game controller
-            GameController gameController = gameLoader.getController();
-
-            // Set the game mode BEFORE starting the game
-            gameController.setGameMode(gameMode);
-
-            // Start the game (this will initialize players with the correct mode)
-            gameController.startGame();
-
-            // Create and show the game stage
-            Stage gameStage = new Stage();
-            String modeText = switch (gameMode) {
-                case "pvp" -> "بازیکن در برابر بازیکن";
-                case "pvAI" -> "بازیکن در برابر هوش مصنوعی";
-                case "aiVsAi" -> "هوش مصنوعی در برابر هوش مصنوعی";
-                default -> "حالت نامشخص";
-            };
-            gameStage.setTitle("نبرد ربات‌ها - " + modeText);
-            gameStage.setScene(new Scene(gameRoot));
-            gameStage.setResizable(false);
-            gameStage.show();
-
-            System.out.println("Game started with mode: " + gameMode);
 
         } catch (Exception e) {
             e.printStackTrace();
-            Alert alert = new Alert(Alert.AlertType.ERROR, "خطا در لود صفحه بازی: " + e.getMessage());
-            alert.showAndWait();
+            showErrorMessage("خطا در بارگذاری صفحه بازی");
         }
     }
 
+    // متد تنظیمات بازی
     @FXML
     private void handleSettings(ActionEvent event) {
         try {
-            System.out.println("Loading Settings FXML: " + getClass().getResource("/game/Settings.fxml"));
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/game/Settings.fxml"));
             Parent root = loader.load();
 
+            // پنجره تنظیمات
             Stage stage = new Stage();
             stage.setTitle("تنظیمات بازی");
-            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.initModality(Modality.APPLICATION_MODAL); // جلوگیری از کار با پنجره اصلی
             stage.setScene(new Scene(root));
 
+            // گرفتن کنترلر پنجره تنظیمات
             SettingsController controller = loader.getController();
             controller.setDialogStage(stage);
 
-            stage.showAndWait();
+            stage.showAndWait(); // منتظر بمان تا پنجره بسته شود
 
-            // Only update if user confirmed
-            if (controller.isConfirmed()) {
-                selectedGameType = controller.getSelectedGameType();
+            // دریافت نوع بازی انتخاب شده بعد از بسته شدن پنجره تنظیمات
+            selectedGameType = controller.getSelectedGameType();
 
-                if (label != null) {
-                    label.setText("نوع بازی انتخاب شده: " + selectedGameType);
-                }
+            // به‌روزرسانی نمایش نوع بازی
+            if (label != null) {
+                label.setText("نوع بازی انتخاب شده: " + selectedGameType);
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            Alert alert = new Alert(Alert.AlertType.ERROR, "خطا در لود تنظیمات: " + e.getMessage());
-            alert.showAndWait();
+            showErrorMessage("خطا در بارگذاری تنظیمات");
         }
     }
 
+    // متد برای بستن پنجره
     @FXML
     private void handleExit(ActionEvent event) {
-        System.exit(0);
+        Stage stage = (Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
+        stage.close(); // بستن پنجره
+    }
+
+    // متد نمایش پیام خطا
+    private void showErrorMessage(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("خطا");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    // گرفتن نوع بازی انتخاب شده
+    public String getSelectedGameType() {
+        return selectedGameType;
+    }
+
+    // متد برای حرکت ربات به سمت چپ
+    @FXML
+    public void moveRobotLeft(ActionEvent event) {
+        // کدهایی که حرکت ربات به سمت چپ را انجام می‌دهند
+        System.out.println("Robot moved left!");
+        // اینجا می‌توانید کد حرکت ربات را قرار دهید
     }
 }

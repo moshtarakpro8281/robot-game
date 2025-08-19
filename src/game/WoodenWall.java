@@ -1,37 +1,26 @@
 package game;
 
 public class WoodenWall extends Obstacle {
-    private int hitPoints = 1;
 
-    public WoodenWall(int row, int col) {
-        super(row, col, ObstacleType.WOODEN_WALL);
-    }
+    private boolean isDestroyed; // متغیر برای ذخیره وضعیت نابود شدن دیوار
 
-    public int getHitPoints() {
-        return hitPoints;
+    public WoodenWall(int x, int y) {
+        super(x, y, ObstacleType.WOODEN_WALL);
+        this.isDestroyed = false; // در ابتدا دیوار نابود نشده است
     }
 
     @Override
     public void applyEffect(Robot robot) {
-        if (robot.isAlive()) {
-            robot.takeDamage(10);
-            System.out.println("ربات به دیوار چوبی در (" + getCol() + ", " + getRow() + ") برخورد کرد و 10% سلامتش کم شد!");
+        // دیوار چوبی هیچ آسیبی به ربات وارد نمی‌کند.
+        if (isDestroyed) {
+            System.out.println("دیوار چوبی در (" + getX() + ", " + getY() + ") نابود شده است.");
         }
     }
 
-    public boolean takeBullet(Board board) {
-        hitPoints--;
-        System.out.println("دیوار چوبی در (" + getCol() + ", " + getRow() + ") یک گلوله خورد! باقی‌مانده: " + hitPoints);
-        if (hitPoints <= 0) {
-            System.out.println("دیوار چوبی در (" + getCol() + ", " + getRow() + ") نابود شد!");
-            board.getCell(getCol(), getRow()).removeEntity();
-            return true;
+    public void takeShot() {
+        if (!isDestroyed) {
+            isDestroyed = true; // دیوار نابود می‌شود
+            System.out.println("دیوار چوبی در (" + getX() + ", " + getY() + ") با شلیک گلوله نابود شد!");
         }
-        return false;
-    }
-
-    @Override
-    public void update() {
-        // نیازی به بروزرسانی نیست ولی متد abstract رو override کردیم
     }
 }

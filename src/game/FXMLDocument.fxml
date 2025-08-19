@@ -7,22 +7,36 @@
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="game.FXMLDocumentController"
-      spacing="20" alignment="CENTER"
-      style="-fx-background-color: #f1f2f6;"
-      prefWidth="400" prefHeight="300">
+      spacing="20"
+      alignment="CENTER"
+      style="-fx-background-color: #f1f2f6; -fx-padding: 20;"
+      prefWidth="400"
+      prefHeight="400">
 
+    <!-- فاصله از بالا -->
     <padding>
         <Insets top="50" />
     </padding>
 
-    <Label fx:id="label" text="نوع بازی: pvp" style="-fx-font-size: 16; -fx-font-weight: bold;" />
-    <Button text="شروع بازی" onAction="#handleStartGame"
+    <!-- عنوان نوع بازی -->
+    <Label fx:id="label"
+           text="نوع بازی: pvp"
+           style="-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: #2d3436;" />
+
+    <!-- دکمه‌های شروع بازی و تنظیمات -->
+    <Button text="شروع بازی"
+            onAction="#handleStartGame"
             style="-fx-background-color: #00b894; -fx-text-fill: white; -fx-font-size: 16; -fx-font-weight: bold;"
             prefWidth="200" prefHeight="40"/>
-    <Button text="تنظیمات بازی" onAction="#handleSettings"
+
+    <Button text="تنظیمات بازی"
+            onAction="#handleSettings"
             style="-fx-background-color: #0984e3; -fx-text-fill: white; -fx-font-size: 16; -fx-font-weight: bold;"
             prefWidth="200" prefHeight="40"/>
-    <Button text="خروج" onAction="#handleExit"
+
+    <!-- دکمه خروج -->
+    <Button text="خروج"
+            onAction="#handleExit"
             style="-fx-background-color: #d63031; -fx-text-fill: white; -fx-font-size: 16; -fx-font-weight: bold;"
             prefWidth="200" prefHeight="40"/>
 

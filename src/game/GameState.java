@@ -1,188 +1,128 @@
 package game;
 
 import java.awt.Point;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GameState {
+    private List<AIPlayer> aiPlayers;  // لیست بازیکنان هوش مصنوعی
+    private Cell[][] map;  // نقشه بازی
+    private int mapWidth;  // عرض نقشه
+    private int mapHeight;  // ارتفاع نقشه
 
-    private Map<String, Point> robotPositions;
-    private Map<String, Integer> robotHealth;
-    private Set<String> deadRobots;
-    private int width, height;
-    private Set<Point> walls;
-    private Map<String, AIPlayer> idToPlayer;
-    private Map<AIPlayer, String> playerToId;
-
-    public GameState(int width, int height) {
-        this.width = width;
-        this.height = height;
-        this.robotPositions = new HashMap<>();
-        this.robotHealth = new HashMap<>();
-        this.deadRobots = new HashSet<>();
-        this.walls = new HashSet<>();
-        this.idToPlayer = new HashMap<>();
-        this.playerToId = new HashMap<>();
+    // سازنده برای مقداردهی اولیه
+    public GameState(List<AIPlayer> aiPlayers, Cell[][] map, int mapWidth, int mapHeight) {
+        this.aiPlayers = aiPlayers;
+        this.map = map;
+        this.mapWidth = mapWidth;
+        this.mapHeight = mapHeight;
     }
 
-    public GameState copy() {
-        GameState copy = new GameState(width, height);
-        for (Map.Entry<String, Point> e : robotPositions.entrySet()) {
-            copy.robotPositions.put(e.getKey(), new Point(e.getValue()));
-        }
-        copy.robotHealth.putAll(robotHealth);
-        copy.deadRobots.addAll(deadRobots);
-        copy.walls.addAll(walls);
-        copy.idToPlayer.putAll(this.idToPlayer);
-        copy.playerToId.putAll(this.playerToId);
-        return copy;
-    }
-
-    public void addPlayer(String id, AIPlayer player) {
-        idToPlayer.put(id, player);
-        playerToId.put(player, id);
-        setRobotPosition(id, player.getPosition());
-        setRobotHealth(id, player.getHealth());
-    }
-
+    // متد برای پیدا کردن شناسه بازیکن از روی شیء AIPlayer
     public String getIdByPlayer(AIPlayer player) {
-        String id = playerToId.get(player);
-        if (id == null) {
-            System.out.println("Warning: No ID found for AIPlayer " + player.getName());
-        }
-        return id;
-    }
-
-    public AIPlayer getPlayerById(String id) {
-        AIPlayer player = idToPlayer.get(id);
-        if (player == null) {
-            System.out.println("Warning: No AIPlayer found for ID " + id);
-        }
-        return player;
-    }
-
-    // متد کمکی برای تبدیل Robot به AIPlayer
-    public AIPlayer getPlayerByRobot(Robot robot) {
-        for (AIPlayer player : idToPlayer.values()) {
-            if (player.getRobot() == robot) {
-                return player;
+        for (AIPlayer aiPlayer : aiPlayers) {
+            if (aiPlayer != null && aiPlayer.equals(player)) {
+                return aiPlayer.getId();  // فرض بر این است که هر AIPlayer دارای شناسه است
             }
         }
-        return null;
+        return null;  // اگر بازیکن پیدا نشد
     }
 
-    public List<AIPlayer> getEnemies(String robotId) {
+    // متد برای دریافت دشمنان یک بازیکن بر اساس شناسه
+    public List<AIPlayer> getEnemies(String myId) {
         List<AIPlayer> enemies = new ArrayList<>();
-        for (Map.Entry<String, AIPlayer> entry : idToPlayer.entrySet()) {
-            String id = entry.getKey();
-            if (!id.equals(robotId) && !deadRobots.contains(id)) {
-                enemies.add(entry.getValue());
+        for (AIPlayer aiPlayer : aiPlayers) {
+            if (aiPlayer != null && !aiPlayer.getId().equals(myId)) {
+                enemies.add(aiPlayer);  // همه بازیکنانی که شناسه‌شان متفاوت است دشمن هستند
             }
         }
         return enemies;
     }
 
-    public void setRobotPosition(String robotId, Point position) {
-        robotPositions.put(robotId, position);
-    }
-
-    public Point getRobotPosition(String robotId) {
-        return robotPositions.get(robotId);
-    }
-
-    public void setRobotHealth(String robotId, int health) {
-        robotHealth.put(robotId, health);
-        if (health <= 0) deadRobots.add(robotId);
-    }
-
-    public int getRobotHealth(String robotId) {
-        return robotHealth.getOrDefault(robotId, 0);
-    }
-
-    public boolean isRobotDead(String robotId) {
-        return deadRobots.contains(robotId);
-    }
-
-    public void addWall(Point wall) {
-        walls.add(wall);
-    }
-
-    private boolean inBounds(Point p) {
-        return p.x >= 0 && p.x < width && p.y >= 0 && p.y < height;
-    }
-
-    public boolean isWall(Point p) {
-        return !inBounds(p) || walls.contains(p);
-    }
-
-    public boolean isValidPosition(Point p) {
-        return inBounds(p) && !walls.contains(p);
-    }
-
-    public boolean isGameOver() {
-        int aliveCount = 0;
-        for (String id : idToPlayer.keySet()) {
-            if (!isRobotDead(id)) aliveCount++;
-        }
-        return aliveCount <= 1;
-    }
-
-    public AIPlayer getRobotAt(int x, int y) {
-        Point target = new Point(x, y);
-        for (Map.Entry<String, Point> entry : robotPositions.entrySet()) {
-            if (deadRobots.contains(entry.getKey())) continue;
-            if (entry.getValue().equals(target)) {
-                return idToPlayer.get(entry.getKey());
+    // متد برای دریافت موقعیت یک بازیکن با استفاده از شیء AIPlayer
+    public Point getPlayerPosition(AIPlayer player) {
+        for (AIPlayer aiPlayer : aiPlayers) {
+            if (aiPlayer != null && aiPlayer.equals(player)) {
+                return aiPlayer.getPosition();  // دریافت موقعیت از متد getPosition() در AIPlayer
             }
         }
-        return null;
+        return null;  // اگر بازیکن پیدا نشد
     }
 
-    public List<AIPlayer> getAllRobots() {
-        List<AIPlayer> list = new ArrayList<>();
-        for (Map.Entry<String, AIPlayer> entry : idToPlayer.entrySet()) {
-            if (!isRobotDead(entry.getKey())) {
-                list.add(entry.getValue());
+    // متد جدید برای دریافت موقعیت همه ربات‌ها (موقعیت همه بازیکنان)
+    public List<Point> getAllPlayerPositions() {
+        List<Point> playerPositions = new ArrayList<>();
+        for (AIPlayer aiPlayer : aiPlayers) {
+            if (aiPlayer != null && aiPlayer.getRobot() != null) {
+                playerPositions.add(aiPlayer.getPosition());  // دریافت موقعیت از متد getPosition()
             }
         }
-        return list;
+        return playerPositions;
     }
 
-    public boolean canMove(AIPlayer player, Direction dir) {
-        String id = getIdByPlayer(player);
-        if (id == null) return false;
-
-        Point pos = robotPositions.get(id);
-        if (pos == null) return false;
-
-        Point newPos = new Point(pos);
-        switch (dir) {
-            case UP:    newPos.y--; break;
-            case DOWN:  newPos.y++; break;
-            case LEFT:  newPos.x--; break;
-            case RIGHT: newPos.x++; break;
-        }
-
-        return isValidPosition(newPos) && getRobotAt(newPos.x, newPos.y) == null;
-    }
-
-    // متد به‌روزشده برای ساخت GameState از لیست AIPlayer ها و نقشه
-    public static GameState fromCurrentState(List<AIPlayer> aiPlayers, Cell[][] map, int width, int height) {
-        GameState gameState = new GameState(width, height);
-
-        for (int r = 0; r < height; r++) {
-            for (int c = 0; c < width; c++) {
-                Entity entity = map[r][c].getEntity();
-                if (entity instanceof Obstacle) {
-                    gameState.addWall(new Point(c, r));
-                }
+    // متد برای دریافت ربات‌های زنده
+    public List<Robot> getAliveRobots() {
+        List<Robot> aliveRobots = new ArrayList<>();
+        for (AIPlayer aiPlayer : aiPlayers) {
+            if (aiPlayer != null && aiPlayer.getRobot().isAlive()) {
+                aliveRobots.add(aiPlayer.getRobot());
             }
         }
+        return aliveRobots;
+    }
 
-        for (AIPlayer player : aiPlayers) {
-            String id = player.getName(); // یا هر شناسه منحصربفرد که دارید
-            gameState.addPlayer(id, player);
+    // متد برای دریافت ربات‌های دشمن
+    public List<Robot> getEnemyRobots(AIPlayer aiPlayer) {
+        List<Robot> enemyRobots = new ArrayList<>();
+        String myId = aiPlayer.getId();
+        List<AIPlayer> enemies = getEnemies(myId);
+
+        for (AIPlayer enemy : enemies) {
+            if (enemy.getRobot().isAlive()) {
+                enemyRobots.add(enemy.getRobot());
+            }
         }
+        return enemyRobots;
+    }
 
-        return gameState;
+    // متد برای دریافت تمامی ربات‌ها
+    public List<Robot> getAllRobots() {
+        List<Robot> allRobots = new ArrayList<>();
+        for (AIPlayer aiPlayer : aiPlayers) {
+            if (aiPlayer != null && aiPlayer.getRobot() != null) {
+                allRobots.add(aiPlayer.getRobot());
+            }
+        }
+        return allRobots;
+    }
+
+    // متد برای بررسی اینکه آیا رباتی به هدفش رسیده است
+    public boolean isRobotAtTarget(Robot robot, Point target) {
+        return robot.getX() == target.x && robot.getY() == target.y;
+    }
+
+    // سایر متدهای گتتر و ستتر
+    public List<AIPlayer> getAiPlayers() {
+        return aiPlayers;
+    }
+
+    public Cell[][] getMap() {
+        return map;
+    }
+
+    public int getMapWidth() {
+        return mapWidth;
+    }
+
+    public int getMapHeight() {
+        return mapHeight;
+    }
+
+    // متد برای ساخت GameState از وضعیت فعلی بازی
+    public static GameState fromCurrentState(List<AIPlayer> aiPlayers, Cell[][] map, int mapWidth, int mapHeight) {
+        return new GameState(aiPlayers, map, mapWidth, mapHeight);
     }
 }
+
+
+
